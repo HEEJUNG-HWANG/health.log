@@ -103,7 +103,7 @@
 
 ---
 
-## 🛠 기술적 도전 (인사담당자 어필 포인트)
+## 🛠 기술적 도전
 
 ### 1. 단일 HTML 파일 패러다임 — 빌드 시스템 0
 
@@ -154,17 +154,59 @@
 
 ## 📸 스크린샷
 
-> ![메인 대시보드](./docs/screenshots/01-main.png)
-> *메인 — 단백질·칼로리·수분·식이섬유 누적 + 끼니별 카드*
+### 체중 로그 — BMR 3공식 + 근손실 방지
+![체중 로그 + BMR 3공식](./docs/screenshots/01.jpg)
+*BMI 분석 · Mifflin/Katch/InBody 3공식 비교 · 활동 수준별 TDEE · 근손실 방지 최소 기준 카드*
 
-> ![체중 로그 + BMR 3공식](./docs/screenshots/02-weight.png)
-> *체중 로그 — BMI + Mifflin/Katch/InBody 3공식 + TDEE + 근손실 방지 카드*
+![체중 로그 상세](./docs/screenshots/02.jpg)
+*감량 추이 · 시각화 바 · 검진 시점 대비 변동률*
 
-> ![검진 PDF AI 분석](./docs/screenshots/03-checkup-ai.png)
-> *검진 PDF AI 분석 — 27p 검진지 → JSON 자동 추출*
+### 캘린더 — 일별 평가 + 상세 모달
+![캘린더](./docs/screenshots/03.jpg)
+*일별 평가 색상 (운동✓+식단≤목표 = 초록 / 칼로리 초과 = 빨강 / 부분 = 회색)*
 
-> ![식단 스캔](./docs/screenshots/04-meal-scan.png)
-> *식단 스캔 — 음식 사진 + 영양성분표 → confidence 뱃지 + 자동 합계*
+![일자 상세 모달](./docs/screenshots/04.jpg)
+*셀 클릭 시 상세 모달 — 끼니/운동/체중/수면 통합*
+
+![수면 + 애플피트니스 AI 분석](./docs/screenshots/05.jpg)
+*AutoSleep / 애플피트니스 스크린샷 → AI 자동 분석 (체중 기록 일자 picker)*
+
+### 건강검진 AI 분석
+![검진 PDF AI 분석](./docs/screenshots/06.jpg)
+*검진 PDF/이미지/텍스트 업로드 → 의심 질환 자동 카테고리 분류 (이상지질혈증/고혈압/지방간/요산/심전도/전립선 등)*
+
+![검진 결과 통합 view](./docs/screenshots/07.jpg)
+*종합 소견 + cvdRisk + metrics 표 (LDL/HDL/혈압/ALT 등 자동 추출 → 체중 로그 자동 반영)*
+
+### GLP-1 약물 환경 분기
+![GLP-1 설정](./docs/screenshots/08.jpg)
+*설정에서 마운자로/위고비/기타 선택 → 위장 정체 경고 + 야간 고형물 룰 + 단백질 권장량 자동 조정*
+
+### 식단 스캔
+![식단 스캔 AI](./docs/screenshots/09.jpg)
+*음식 사진 / 영양성분표 / 혼합 이미지 다중 업로드 → AI confidence 뱃지 + 항목별 inline 편집*
+
+### 분석 페이지
+![14일 trend](./docs/screenshots/10.jpg)
+*14일 단백질/칼로리/걸음 trend bar (외부 라이브러리 없이 단일 HTML 시각화)*
+
+![4주 운동 볼륨](./docs/screenshots/11.jpg)
+*4주 운동 볼륨 (RPE × 분 합산) + 의료 일정 리마인더*
+
+### 설정 + 사용법
+![설정 모달](./docs/screenshots/12.jpg)
+*키/체중/목표(단백질·칼로리·수분·식이섬유)/GLP-1 약물 통합 설정*
+
+![사용법 모달](./docs/screenshots/13.jpg)
+*헤더 📖 사용법 클릭 → A to Z 단계별 가이드 (Ollama 설치 → CORS 설정 → 모델 다운로드 → 연동 확인)*
+
+### Ollama 환경 구축 가이드
+![Ollama 설치 / OLLAMA_ORIGINS](./docs/screenshots/14.jpg)
+![모델 다운로드](./docs/screenshots/15.jpg)
+![CORS 트러블슈팅](./docs/screenshots/16.jpg)
+![검진 분석 실행](./docs/screenshots/17.jpg)
+![분석 결과 적용](./docs/screenshots/18.jpg)
+![최종 통합 view](./docs/screenshots/19.jpg)
 
 ---
 
