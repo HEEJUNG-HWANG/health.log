@@ -12,6 +12,8 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   }
 </script>
+<!-- heic2any CDN — 아이폰 HEIC/HEIF 이미지 → JPEG 자동 변환 (Chrome/Firefox/Edge 등 HEIC 미지원 브라우저 대응) -->
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Apple SD Gothic Neo',-apple-system,sans-serif;background:#0a0a0a;color:#e0e0e0;min-height:100dvh}
@@ -469,8 +471,8 @@
         <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
           <button class="d-input-btn" onclick="document.getElementById('reg-prod-img').click()">📷 상품 이미지 *</button>
           <button class="d-input-btn" onclick="document.getElementById('reg-nutri-img').click()">📋 영양성분표 *</button>
-          <input type="file" id="reg-prod-img" accept="image/*" style="display:none" onchange="onRegProductImage(this)">
-          <input type="file" id="reg-nutri-img" accept="image/*" style="display:none" onchange="onRegNutritionImage(this)">
+          <input type="file" id="reg-prod-img" accept="image/*,.heic,.heif,.HEIC,.HEIF" style="display:none" onchange="onRegProductImage(this)">
+          <input type="file" id="reg-nutri-img" accept="image/*,.heic,.heif,.HEIC,.HEIF" style="display:none" onchange="onRegNutritionImage(this)">
         </div>
         <div id="reg-img-preview" style="display:flex;gap:6px;margin-bottom:8px"></div>
         <div id="reg-ai-status" style="font-size:10px;color:#666;margin-bottom:8px">이미지 미첨부 (상품+영양성분표 2장 필수)</div>
@@ -563,9 +565,9 @@
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
         <button class="d-input-btn d-input-btn-gold" onclick="saveAppleFitness()">💾 데이터 저장</button>
         <button class="d-input-btn" onclick="document.getElementById('apple-fitness-img').click()">📸 애플 피트니스 스크린샷</button>
-        <input type="file" id="apple-fitness-img" accept="image/*" style="display:none" onchange="attachFitnessScreenshot(this)">
+        <input type="file" id="apple-fitness-img" accept="image/*,.heic,.heif,.HEIC,.HEIF" style="display:none" onchange="attachFitnessScreenshot(this)">
         <button class="d-input-btn" onclick="document.getElementById('autosleep-img').click()">😴 AutoSleep 스크린샷</button>
-        <input type="file" id="autosleep-img" accept="image/*" style="display:none" onchange="attachSleepScreenshot(this)">
+        <input type="file" id="autosleep-img" accept="image/*,.heic,.heif,.HEIC,.HEIF" style="display:none" onchange="attachSleepScreenshot(this)">
       </div>
       <div id="fitness-status" style="font-size:11px;color:#666;margin-top:6px">미기록</div>
       <div id="fitness-screenshots" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
@@ -653,7 +655,7 @@
         ondragover="event.preventDefault();this.classList.add('drag-over')"
         ondragleave="this.classList.remove('drag-over')"
         ondrop="scanHandleDrop(event)">
-        <input type="file" id="scan-file-input" accept="image/*" multiple onchange="scanHandleFiles(this.files)">
+        <input type="file" id="scan-file-input" accept="image/*,.heic,.heif,.HEIC,.HEIF" multiple onchange="scanHandleFiles(this.files)">
         <div class="drop-icon">📷</div>
         <div class="drop-title">사진을 끌어다 놓거나 클릭하여 업로드</div>
         <div class="drop-hint" id="scan-mode-hint">영양성분표 — 여러 제품을 한 번에 올려도 됩니다</div>
@@ -1093,7 +1095,7 @@
         <!-- PDF / 이미지 업로드 -->
         <div style="flex:1;min-width:240px">
           <div style="font-size:11px;color:#64b5f6;font-weight:600;margin-bottom:6px">📂 파일 업로드 (PDF / PNG / JPG)</div>
-          <input type="file" id="d-checkup-file" accept=".pdf,image/*" multiple onchange="onCheckupFileSelected(this)" style="font-size:11px;width:100%;color:#aaa">
+          <input type="file" id="d-checkup-file" accept=".pdf,image/*,.heic,.heif,.HEIC,.HEIF" multiple onchange="onCheckupFileSelected(this)" style="font-size:11px;width:100%;color:#aaa">
           <div id="d-checkup-file-info" style="font-size:10px;color:#555;margin-top:6px">PDF 는 페이지별 이미지로 변환 후 vision API 호출. 다중 페이지 OK</div>
           <div id="d-checkup-pdf-preview" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
         </div>
@@ -1487,6 +1489,7 @@ ollama list  # 설치 확인</pre>
       <div style="margin:5px 0"><strong style="color:#ffd54f">❌ 데이터 사라짐</strong><br>→ localStorage 가 폴더 위치 기반. 폴더 이동/이름 변경 시 분리. JSON 백업 복원 가능</div>
       <div style="margin:5px 0"><strong style="color:#ffd54f">❌ 다기기 동기화 X</strong><br>→ 포터블은 단일 브라우저 한정. 자체 호스팅 또는 JSON 수동 전송</div>
       <div style="margin:5px 0"><strong style="color:#ffd54f">❌ 본인이 아닌 데이터가 보임</strong><br>→ 이전 사용자의 localStorage 잔존 가능. 브라우저 시크릿/프라이빗 모드로 열거나 DevTools → Application → Local Storage 클리어</div>
+      <div style="margin:5px 0"><strong style="color:#ffd54f">📱 아이폰 HEIC 이미지 인식 X</strong><br>→ 자동 변환 지원됨 (heic2any CDN). 첫 업로드 시 인터넷 필요 (이후 캐시). "HEIC → JPEG 변환 완료" 토스트 확인. 변환 실패 시 아이폰 설정 → 카메라 → 형식 → "높은 호환성" (JPEG) 으로 변경 권장</div>
     </div>
   </div>
 
@@ -2496,6 +2499,23 @@ async function pdfToImages(file, scale = 1.5) {
   return images;
 }
 
+// 📱 HEIC/HEIF → JPEG 변환 (아이폰 에어드랍 이미지 호환)
+// 브라우저 대부분 HEIC 미지원 — heic2any CDN 으로 클라이언트 변환
+async function normalizeImageFile(file) {
+  if (!file) return file;
+  const isHeic = /heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name);
+  if (!isHeic) return file;
+  if (!window.heic2any) throw new Error('HEIC 변환 라이브러리 로드 실패 — 인터넷 연결 확인 필요 (첫 로드 후 브라우저 캐시)');
+  try {
+    const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+    const blob = Array.isArray(result) ? result[0] : result;
+    const newName = file.name.replace(/\.(heic|heif)$/i, '.jpg');
+    return new File([blob], newName, { type: 'image/jpeg', lastModified: file.lastModified || Date.now() });
+  } catch (e) {
+    throw new Error(`HEIC 변환 실패 (${file.name}): ${e.message}`);
+  }
+}
+
 function fileToDataURL(file) {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -2515,13 +2535,16 @@ async function onCheckupFileSelected(input) {
   preview.innerHTML = '';
   try {
     for (const f of files) {
+      const isHeic = /heic|heif/i.test(f.type) || /\.(heic|heif)$/i.test(f.name);
       if (f.type === 'application/pdf' || /\.pdf$/i.test(f.name)) {
         info.textContent = `PDF "${f.name}" → 페이지 변환 중...`;
         const pages = await pdfToImages(f);
         CHECKUP_IMAGES.push(...pages);
         info.textContent = `PDF "${f.name}" → ${pages.length} 페이지 변환 완료`;
-      } else if (/^image\//.test(f.type)) {
-        const url = await fileToDataURL(f);
+      } else if (isHeic || /^image\//.test(f.type)) {
+        const normalized = isHeic ? await normalizeImageFile(f) : f;
+        if (isHeic) info.textContent = `📱 HEIC → JPEG 변환 완료: ${f.name}`;
+        const url = await fileToDataURL(normalized);
         CHECKUP_IMAGES.push(url);
       }
     }
@@ -2667,8 +2690,10 @@ function cancelCheckupResult() {
 
 async function onRegProductImage(input) {
   if (!input.files[0]) return;
-  const file = input.files[0];
+  let file = input.files[0];
   setRegAiStatus('📷 상품 이미지 업로드 중...', '#c8a96e');
+  try { file = await normalizeImageFile(file); }
+  catch (e) { setRegAiStatus('❌ ' + e.message, '#ff6b35'); input.value = ''; return; }
   _newProduct.productImage = await storeImage(file, 'product');
   renderRegPreview(); updateRegSubmitState();
   input.value = '';
@@ -2676,8 +2701,11 @@ async function onRegProductImage(input) {
 
 async function onRegNutritionImage(input) {
   if (!input.files[0]) return;
+  let raw = input.files[0];
+  try { raw = await normalizeImageFile(raw); }
+  catch (e) { setRegAiStatus('❌ ' + e.message, '#ff6b35'); input.value = ''; return; }
   // AI 분석 + 서버 업로드 둘 다 압축본 사용 (원본 5MB+ 시 페이로드 폭주 방지)
-  const file = await compressImage(input.files[0]);
+  const file = await compressImage(raw);
   const dataURL = await fileToBase64(file);
   setRegAiStatus('🤖 AI 영양성분 분석 중... (gemma4:31b-cloud)', '#c8a96e');
   try {
@@ -3147,7 +3175,10 @@ function renderFitnessStatus() {
 
 async function attachFitnessScreenshot(input) {
   if (!input.files[0]) return;
-  const file = await compressImage(input.files[0]);
+  let raw = input.files[0];
+  try { raw = await normalizeImageFile(raw); }
+  catch (e) { toast('❌ ' + e.message); input.value = ''; return; }
+  const file = await compressImage(raw);
   const dataURL = await fileToBase64(file);
   const date = getFitDate();
   getDay(date).exercise.screenshot = await storeImage(file, 'fitness');
@@ -3183,7 +3214,10 @@ async function attachFitnessScreenshot(input) {
 
 async function attachSleepScreenshot(input) {
   if (!input.files[0]) return;
-  const file = await compressImage(input.files[0]);
+  let raw = input.files[0];
+  try { raw = await normalizeImageFile(raw); }
+  catch (e) { toast('❌ ' + e.message); input.value = ''; return; }
+  const file = await compressImage(raw);
   const dataURL = await fileToBase64(file);
   const date = getFitDate();
   getDay(date).sleep.screenshot = await storeImage(file, 'sleep');
@@ -5310,15 +5344,21 @@ function refreshApiCard() {
 
 async function scanHandleFiles(fileList) {
   const files = [...fileList];
-  for (const file of files) {
-    if (!file.type.startsWith('image/')) continue;
+  for (const rawFile of files) {
+    const isHeic = /heic|heif/i.test(rawFile.type) || /\.(heic|heif)$/i.test(rawFile.name);
+    // image/* 거나 HEIC 모두 허용 (HEIC 는 type 빈 문자열 케이스 있음)
+    if (!isHeic && !rawFile.type.startsWith('image/')) continue;
     if (_scanFiles.length >= 5) { toast('최대 5장'); break; }
+    let file;
+    try { file = await normalizeImageFile(rawFile); }
+    catch (e) { toast('❌ ' + e.message); continue; }
     const dataURL = await fileToBase64(file);
     const ts = Date.now() + Math.random().toString(36).slice(2,5);
     const meal = document.getElementById('scan-target-meal').value;
     const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
     const filename = `${KEY_TODAY()}_${meal}_${ts}.${ext}`;
     _scanFiles.push({ file, dataURL, mime: file.type || 'image/jpeg', preview: URL.createObjectURL(file), filename });
+    if (isHeic) toast(`📱 HEIC → JPEG 변환 완료: ${rawFile.name}`);
   }
   scanRenderPreviews();
   scanUpdatePromptPreview();
