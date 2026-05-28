@@ -155,58 +155,71 @@
 ## 📸 스크린샷
 
 ### 체중 로그 — BMR 3공식 + 근손실 방지
-![체중 로그 + BMR 3공식](./docs/screenshots/01.jpg)
-*BMI 분석 · Mifflin/Katch/InBody 3공식 비교 · 활동 수준별 TDEE · 근손실 방지 최소 기준 카드*
+![체중 로그](./docs/screenshots/01.jpg)
+*BMI 분석 + 일일 칼로리 소비 분석 (Mifflin 1820 / Katch 1566 / InBody 1585 3공식 동시 비교) + TDEE 2179 + 권장 섭취 1679 (−500 적자) + 💪 근손실 방지 최소 기준 6카드 (BMR 한계·안전 최저·최소·권장·상한 단백질·최대 적자) + 현재 설정 자동 검증*
 
-![체중 로그 상세](./docs/screenshots/02.jpg)
-*감량 추이 · 시각화 바 · 검진 시점 대비 변동률*
+### 캘린더 — 월간 평가 + 요약
+![캘린더](./docs/screenshots/02.jpg)
+*2026년 5월 캘린더 — 일별 평가 색상 (운동✓+식단≤목표 = 초록 / 칼로리 초과 = 빨강 / 부분 기록 = 회색) + 월간 요약 (기록 10일, 평균 1159kcal/79.9g, 체중 96.8→90.5kg −6.3kg)*
 
-### 캘린더 — 일별 평가 + 상세 모달
-![캘린더](./docs/screenshots/03.jpg)
-*일별 평가 색상 (운동✓+식단≤목표 = 초록 / 칼로리 초과 = 빨강 / 부분 = 회색)*
+### 일자 상세 모달 — 통합 view
+![일자 상세 모달](./docs/screenshots/03.jpg)
+*캘린더 셀 클릭 시 팝업 — 체중 + 끼니별 단백질·칼로리 + 애플 피트니스 운동 + AutoSleep 수면 + 소화 불편도/배변 통합 view (5/22 예시: 92kg / 1957kcal / 단백질 134.4g / 운동 701kcal·8909보 / 수면 9.7h·100점)*
 
-![일자 상세 모달](./docs/screenshots/04.jpg)
-*셀 클릭 시 상세 모달 — 끼니/운동/체중/수면 통합*
+### AI 분석 입력 예시 — AutoSleep / 애플 피트니스 스크린샷
+![AutoSleep 스크린샷 첨부 예시](./docs/screenshots/04.jpg)
+*AutoSleep (애플워치 연동) 스크린샷 — AI 자동 분석으로 수면 시간·품질·심박수 자동 추출*
 
-![수면 + 애플피트니스 AI 분석](./docs/screenshots/05.jpg)
-*AutoSleep / 애플피트니스 스크린샷 → AI 자동 분석 (체중 기록 일자 picker)*
+![애플 피트니스 스크린샷 첨부 예시](./docs/screenshots/05.jpg)
+*애플 피트니스 활동 링 스크린샷 — 움직이기/운동하기/일어서기/걸음 자동 추출*
 
-### 건강검진 AI 분석
-![검진 PDF AI 분석](./docs/screenshots/06.jpg)
-*검진 PDF/이미지/텍스트 업로드 → 의심 질환 자동 카테고리 분류 (이상지질혈증/고혈압/지방간/요산/심전도/전립선 등)*
+### 건강검진 AI 분석 (핵심)
+![암호 PDF 비밀번호 모달](./docs/screenshots/06.jpg)
+*검진 자료 AI 자동 분석 — 암호 보호 PDF 감지 시 전용 모달 자동 표시 (파일명 + 시도 카운터 + 3회 제한)*
 
-![검진 결과 통합 view](./docs/screenshots/07.jpg)
-*종합 소견 + cvdRisk + metrics 표 (LDL/HDL/혈압/ALT 등 자동 추출 → 체중 로그 자동 반영)*
+![검진 PDF 페이지 변환 + AI 분석 중](./docs/screenshots/07.jpg)
+*PDF.js 로 27페이지 → JPEG 자동 변환 + thumbnail preview + gemma4:31b-cloud vision API 응답 대기 (수 분 소요)*
 
-### GLP-1 약물 환경 분기
-![GLP-1 설정](./docs/screenshots/08.jpg)
-*설정에서 마운자로/위고비/기타 선택 → 위장 정체 경고 + 야간 고형물 룰 + 단백질 권장량 자동 조정*
+### GLP-1 약물 환경 분기 (도메인 지식)
+![GLP-1 약물 투약 설정](./docs/screenshots/08.jpg)
+*⚙️ 설정 모달 — GLP-1 약물 (마운자로 티르제파타이드 / 위고비 세마글루타이드 / 기타) 선택 시 위장 정체 경고 + 야간 고형물 룰 + 단백질 권장량 자동 조정. 미사용자는 관련 UI 자동 숨김*
 
-### 식단 스캔
-![식단 스캔 AI](./docs/screenshots/09.jpg)
-*음식 사진 / 영양성분표 / 혼합 이미지 다중 업로드 → AI confidence 뱃지 + 항목별 inline 편집*
+### 식단 스캔 — 사진 → 영양 자동 추출
+![식단 스캔 AI 분석](./docs/screenshots/09.jpg)
+*음식 사진 / 영양성분표 / 혼합 이미지 다중 업로드 → AI confidence 뱃지 + 항목별 inline 편집 (예: 풀무원다논 요프로 84kcal / 15g 단백질) → 선택한 끼니에 추가 또는 즐겨찾기 등록*
 
-### 분석 페이지
-![14일 trend](./docs/screenshots/10.jpg)
-*14일 단백질/칼로리/걸음 trend bar (외부 라이브러리 없이 단일 HTML 시각화)*
+### 분석 페이지 — trend
+![단백질 + 칼로리 14일 trend](./docs/screenshots/10.jpg)
+*📈 분석 탭 — 단백질 일일 트렌드 (목표 150g, 최근 14일, 평균 80g/달성 0일) + 칼로리 일일 트렌드 (목표 1957kcal, 권장 −500 적자)*
 
-![4주 운동 볼륨](./docs/screenshots/11.jpg)
-*4주 운동 볼륨 (RPE × 분 합산) + 의료 일정 리마인더*
+![운동 4주 볼륨 + 걸음수 14일](./docs/screenshots/11.jpg)
+*운동 주간 볼륨 (RPE × 분 합산, 최근 4주, 5/17-5/23 882) + 활동량 트렌드 (걸음수 14일, 평균 7394보, 최고 12.8k)*
 
-### 설정 + 사용법
-![설정 모달](./docs/screenshots/12.jpg)
-*키/체중/목표(단백질·칼로리·수분·식이섬유)/GLP-1 약물 통합 설정*
+### 헤더 + 사용법
+![헤더 — 사용법 버튼](./docs/screenshots/12.jpg)
+*헤더 우측 — 📂 불러오기 / ⚖️ 체중 / ⚙️ 설정 / 📖 사용법 (포터블 모드는 우측상단 사용법 클릭으로 A to Z 가이드 접근)*
 
-![사용법 모달](./docs/screenshots/13.jpg)
-*헤더 📖 사용법 클릭 → A to Z 단계별 가이드 (Ollama 설치 → CORS 설정 → 모델 다운로드 → 연동 확인)*
+![사용법 모달 — A to Z](./docs/screenshots/13.jpg)
+*health.log 사용법 모달 — 포터블 모드 안내 + 목차 (A 다운로드 → Q 트러블슈팅) + B. Ollama 설치 (macOS/Windows/Linux)*
 
-### Ollama 환경 구축 가이드
-![Ollama 설치 / OLLAMA_ORIGINS](./docs/screenshots/14.jpg)
-![모델 다운로드](./docs/screenshots/15.jpg)
-![CORS 트러블슈팅](./docs/screenshots/16.jpg)
-![검진 분석 실행](./docs/screenshots/17.jpg)
-![분석 결과 적용](./docs/screenshots/18.jpg)
-![최종 통합 view](./docs/screenshots/19.jpg)
+### 모바일에서 로컬 Ollama 연동 (보너스 가이드)
+![모바일 연동 — 핵심 구조](./docs/screenshots/14.jpg)
+*모바일(아이폰/아이패드/갤럭시)에서 PC의 로컬 Ollama 에 연동하는 방법 — `[모바일] →WiFi→ [PC의 로컬IP:포트] → Ollama + index.html`*
+
+![방법 1 — 같은 WiFi (Ollama 네트워크 오픈)](./docs/screenshots/15.jpg)
+*방법 1: 같은 WiFi (가장 간단) — Ollama 를 `0.0.0.0:11434` 로 바인딩 + OLLAMA_ORIGINS `*` 설정 (macOS launchctl / Windows 환경변수 / Linux export)*
+
+![방법 1 — PC IP 확인 + HTTP 서버 서빙](./docs/screenshots/16.jpg)
+*방법 1 (이어서) — `ipconfig getifaddr en0` 으로 PC 로컬 IP 확인 후 `python3 -m http.server 8080` 또는 `npx serve` 로 index.html HTTP 서빙 (모바일은 file:// 직접 열 수 없음)*
+
+![방법 1 모바일 접속 + 방법 2 Tailscale](./docs/screenshots/17.jpg)
+*4단계 모바일 접속 (`http://192.168.x.x:8080`) + 5단계 앱 설정에서 Ollama URL 변경. 방법 2 — Tailscale (VPN 처럼 안전, 외부망에서도 가능)*
+
+![방법 3 — ngrok + 기기별 주의사항](./docs/screenshots/18.jpg)
+*방법 3 — ngrok 임시 공개 URL (테스트 용도) + 기기별 주의사항 (iPhone/iPad Safari "안전하지 않음" 경고 / Galaxy Chrome 무난 / 공통: gemma4:31b 응답 지연 시 타임아웃 길게)*
+
+![모바일 연동 권장 조합 요약](./docs/screenshots/19.jpg)
+*권장 조합 — 집 WiFi 내에서만 → 방법 1 (python HTTP + OLLAMA_HOST) / 외출 중에도 → 방법 2 (Tailscale) / 잠깐 테스트 → 방법 3 (ngrok)*
 
 ---
 
