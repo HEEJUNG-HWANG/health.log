@@ -1,0 +1,283 @@
+# 🩺 health.log
+
+**완전 로컬에서 동작하는 AI 기반 통합 건강 트래커**
+*검진 PDF · 식단 · 체중 · 운동 · 수면 — 단일 HTML 파일, 외부 의존성 0, 로컬 LLM (Ollama) 연동*
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Vanilla JS](https://img.shields.io/badge/Stack-Vanilla_JS-yellow)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+[![Local AI](https://img.shields.io/badge/AI-Local_Ollama-blue)](https://ollama.com)
+[![Privacy](https://img.shields.io/badge/Privacy-100%25_Local-green)]()
+[![No Build](https://img.shields.io/badge/Build-None-orange)]()
+
+> 약 8,500 LOC · 단일 HTML 파일 · 의존성 0 (PDF.js CDN 만) · 빌드 시스템 없음
+
+---
+
+## 🎯 프로젝트 한눈에 보기
+
+| 항목 | 내용 |
+|---|---|
+| **개발 기간** | 2026.05.16 ~ 진행 중 |
+| **개발 인원** | 1인 (기획·설계·개발·배포 전담) |
+| **기술 스택** | Vanilla JavaScript · HTML5 Canvas · PDF.js · Ollama (Local LLM) |
+| **배포 형태** | 단일 HTML 포터블 / Node.js 호스팅 (Express + PM2 + Cloudflare Tunnel) |
+| **AI 모델** | gemma4:31b-cloud (vision + 한국어) / gemma3:27b / llama3.2-vision / qwen2.5-vl |
+| **개인정보 보호** | 모든 데이터·AI 분석 100% 로컬 (외부 전송 0) |
+
+---
+
+## 💡 왜 만들었는가 (Problem → Solution)
+
+### 문제 정의
+
+상용 건강 트래커들의 한계:
+1. **개인 의료 정보 외부 서버 전송** — 검진 PDF·체중·식단 모두 클라우드
+2. **검진 PDF는 사람이 수동 입력** — 27p 검진지 텍스트 추출 + 분류 직접
+3. **AI 분석은 유료 구독** — OpenAI/Claude API 비용 부담
+4. **다이어트 트래커는 GLP-1 약물 환경 미고려** — 위장 정체·야간 룰 등 처방 약물 컨텍스트 부재
+5. **단편적 도구 (체중/식단/운동/검진 따로)** — 통합 view 없음
+
+### 해결책
+
+**완전 로컬에서 동작하는 통합 트래커** — 검진 PDF → 로컬 LLM → 체중/식단/운동/수면과 자동 통합. 외부 의존성 0, 빌드 X, 단일 HTML 파일로 배포.
+
+---
+
+## ✨ 핵심 기능
+
+### 1. 검진 PDF AI 자동 분석 (핵심 차별점)
+
+- 검진 PDF 업로드 (다중 파일, 비밀번호 보호 PDF 자동 모달 처리)
+- **클라이언트 사이드 PDF.js 처리** — PDF → canvas → JPEG dataURL → 로컬 Ollama vision API
+- 한국 검진지 구조 (KMI/일반의원 등) 학습된 prompt 로 27p 검진지도 JSON 자동 추출
+- 의심 질환 자동 카테고리 분류 (이상지질혈증/고혈압/지방간/요산/심전도/전립선/갑상선 등 12종)
+- 결과 preview 사용자 검토 + JSON 직접 편집 가능 → 적용 시 체중 로그·BMR 자동 갱신
+
+### 2. 동적 BMR/TDEE 계산 (의학 공식 3종 비교)
+
+- **Mifflin-St Jeor** (1990, 표준): 체중·키·나이 기반
+- **Katch-McArdle** (체성분 정확): LBM 기반 (`370 + 21.6 × LBM`)
+- **InBody 직접 측정값** (가장 정확): 검진 자료에서 자동 추출
+- 체중 입력마다 3공식 모두 실시간 재계산 + 비교 표시
+- 활동 수준 (1.2 ~ 1.9) 변경 시 TDEE 즉시 갱신
+- **stale 경고** — InBody 측정 시점 체중과 현재 차이 5kg+ 시 자동 알림
+
+### 3. 근손실 방지 최소 기준 검증 (ISSN 2017 가이드)
+
+- 최소 칼로리: `max(BMR, 1500)` — 절대 한계
+- 안전 최저: `BMR + 200` — 지속 가능
+- 단백질 최소/권장/상한: 1.6 / 2.0 / 2.4 g/kg 체중
+- **활동 수준 낮으면 자동 안전 캡** — TDEE−1000 < BMR 한계 시 권장값 자동 캡 + 경고
+- 현재 설정 (목표 칼로리 / 단백질) 안전 범위 검증 + 실시간 ⚠ 알림
+
+### 4. 식단 AI 스캔 (음식 사진 → 영양 정보 자동 추출)
+
+- 음식 사진 / 영양성분표 / 혼합 이미지 다중 업로드
+- 로컬 Ollama vision 으로 한국 음식 분석
+- **confidence 뱃지** (high/medium/low) + 항목별 inline 편집
+- 끼니 추가 / 즐겨찾기 등록 (이미지 + 영양 정보 보관)
+
+### 5. GLP-1 약물 환경 동적 분기 (도메인 지식)
+
+- 설정에서 GLP-1 약물 선택 (마운자로 / 위고비 / 기타) 시:
+  - 야간 고형물 경고 활성 (22:30 이후)
+  - 위장 정체 부작용 모니터링 (GI 불편도 + 배변)
+  - 단백질 권장량 자동 상향 (1.6 → 2.0 g/kg)
+  - 타이밍 풀로우 탭 표시
+- 미사용자는 관련 UI 자동 숨김
+
+### 6. 다기기 동기화 (호스팅 버전 한정)
+
+- Express 백엔드 + JSON 파일 저장
+- **field-level union merge** — `lastUpdatedAt` 단순 비교 대신 weights/days/exercises/meals.items 모두 union
+- `_goalsUpdatedAt` timestamp marker — server admin 강제 업데이트 vs client stale 충돌 해결
+- `visibilitychange` + `focus` 이벤트 자동 재pull
+- `Cache-Control: no-store` + `?t=Date.now()` cache buster — Safari GET 캐싱 우회
+- `navigator.sendBeacon()` — 페이지 떠날 때 in-flight write 보호
+
+### 7. 분석 페이지 (외부 라이브러리 없이 시각화)
+
+- 14일 단백질/칼로리/걸음 trend bar
+- 4주 운동 볼륨 (RPE × 분 합산)
+- SVG / D3 / Chart.js 없이 flexbox + `height: pct%` 로 구현 (단일 HTML 유지)
+
+---
+
+## 🛠 기술적 도전 (인사담당자 어필 포인트)
+
+### 1. 단일 HTML 파일 패러다임 — 빌드 시스템 0
+
+- 의존성 0 (PDF.js CDN 외) — 다운로드 즉시 사용 가능
+- 사용자 컴퓨터에 Node/npm/yarn 설치 불필요
+- 약 320KB 단일 파일에 SPA + 데이터 모델 + AI 통합 모두 포함
+
+### 2. Privacy-first 아키텍처
+
+- 모든 데이터 처리 100% 로컬
+- AI 호출도 `localhost:11434` 만
+- 검진 PDF 처리도 클라이언트 canvas + 로컬 Ollama
+- 외부 서버 전송 0 — HIPAA/개인정보 위험 X
+
+### 3. 로컬 LLM 통합 가이드 (CORS 우회)
+
+- `file://` 에서 `localhost` Ollama 호출 시 CORS 문제 발생
+- OS별 (macOS launchctl / Windows 환경변수 / Linux systemctl) 영구 설정 가이드 + 트러블슈팅 9종
+
+### 4. 의학 도메인 정확성
+
+- BMR 3공식 비교 (Mifflin / Katch / InBody) — 일반 트래커는 1공식만
+- ISSN 2017 Sports Nutrition Guidelines 정확 적용
+- 대한비만학회 2022 BMI 분류 (아시아인 기준)
+- GLP-1 약물 환경 별도 분기 (처방 의학 지식)
+
+### 5. null-safe 데이터 처리 (사람마다 다른 검진 결과)
+
+- 검진지마다 항목 다름 (간기능만 있거나, 갑상선만 있거나, 모든 항목 풀세트거나)
+- AI 추출 결과의 `cvdRisk` / `targets` / `metrics[].note` 등 모두 optional
+- 동적 카드 표시 (데이터 있을 때만 카드 렌더링, 없으면 자동 hide)
+- `summary.suspect[]` 키워드 매칭으로 자동 카테고리 분류 (12종 + fallback)
+
+### 6. PDF.js 클라이언트 처리
+
+- 비밀번호 보호 PDF 자동 감지 → 전용 모달 → 비밀번호 입력 (3회 제한)
+- 페이지별 canvas 렌더링 → JPEG 0.85 dataURL → multi-image vision API
+- 27p 검진지도 모든 페이지 처리
+
+### 7. UX 깊은 고민 (실제 사용자 시나리오 검증)
+
+- 다기기 sync silent fail 3-layer 안전망 (압축 + await + sendBeacon)
+- localStorage 5-10MB quota 회피 (이미지 canvas downscale + JPEG 0.85)
+- iOS Safari nested clickable 함정 (button > span onclick → sibling 분리)
+- 안전 가드의 anti-user 함정 회피 (자동 복구가 사용자 데이터 wipeout X)
+
+---
+
+## 📸 스크린샷
+
+> ![메인 대시보드](./docs/screenshots/01-main.png)
+> *메인 — 단백질·칼로리·수분·식이섬유 누적 + 끼니별 카드*
+
+> ![체중 로그 + BMR 3공식](./docs/screenshots/02-weight.png)
+> *체중 로그 — BMI + Mifflin/Katch/InBody 3공식 + TDEE + 근손실 방지 카드*
+
+> ![검진 PDF AI 분석](./docs/screenshots/03-checkup-ai.png)
+> *검진 PDF AI 분석 — 27p 검진지 → JSON 자동 추출*
+
+> ![식단 스캔](./docs/screenshots/04-meal-scan.png)
+> *식단 스캔 — 음식 사진 + 영양성분표 → confidence 뱃지 + 자동 합계*
+
+---
+
+## 🚀 빠른 시작
+
+### 사용자 (포터블)
+
+1. [Releases](../../releases) 에서 `health.log-portable.zip` 다운로드
+2. 적당한 폴더에 압축 풀기
+3. `index.html` 더블클릭 → 브라우저에서 열림
+4. 헤더의 **📖 사용법** 버튼 → A to Z 단계별 안내
+
+### 개발자 (clone)
+
+```bash
+git clone https://github.com/<USER>/health.log.git
+cd health.log
+open index.html  # macOS
+# Linux: xdg-open index.html
+# Windows: start index.html
+```
+
+### AI 기능 활성화 (선택)
+
+```bash
+# 1. Ollama 설치 (macOS)
+brew install ollama
+
+# 2. CORS 설정 (file:// 필수)
+launchctl setenv OLLAMA_ORIGINS "*"
+osascript -e 'tell app "Ollama" to quit' && open -a Ollama
+
+# 3. 모델 다운로드 (vision 지원 필수)
+ollama pull gemma4:31b-cloud  # 권장 (한국어 강함)
+
+# 4. 연동 확인
+curl http://localhost:11434/api/tags
+```
+
+자세한 OS별 가이드는 헤더 **📖 사용법** 버튼 또는 [Wiki](../../wiki) 참조.
+
+---
+
+## 📐 계산 / 가이드라인 출처
+
+| 항목 | 출처 |
+|---|---|
+| BMR — Mifflin-St Jeor | Mifflin MD, et al. 1990. *Am J Clin Nutr* |
+| BMR — Katch-McArdle | Katch FI, McArdle WD. 1981. *Nutrition, Weight Control, and Exercise* |
+| TDEE 활동계수 | Harris JA, Benedict FG. 1919 |
+| 단백질 권장 (1.6-2.4 g/kg) | ISSN Position Stand 2017. *J Int Soc Sports Nutr* |
+| BMI 분류 (아시아인) | 대한비만학회 2022 진료지침 |
+| GLP-1 약물 가이드 | Eli Lilly/Novo Nordisk 처방 정보 + 의학 문헌 |
+
+---
+
+## 🛡 보안 / 면책
+
+- ✅ **완전 로컬 처리** — 데이터·AI 모두 사용자 PC 안에서만
+- ✅ **외부 전송 0** — 백엔드 호스팅 모드에서도 본인 서버만
+- ✅ **암호화 권장** — JSON 백업 파일은 사용자가 직접 관리
+- ⚠ **의료 진단 대체 X** — 모니터링 보조 도구. 의심 소견 시 의료진 상담 필수
+- ⚠ **자기 책임 사용** — 본인 건강 관리 용도. 타인 처방/진단 X
+
+---
+
+## 🗺 로드맵
+
+- [ ] 영문 i18n (현재 한국어만)
+- [ ] 모바일 PWA 변환 (현재 file:// + 브라우저)
+- [ ] 추가 AI 모델 자동 감지 (claude/openai/gemini API 옵션)
+- [ ] 운동 사진 분석 (자세 / 폼 체크)
+- [ ] InBody 시계열 trend 그래프
+- [ ] 의료진 공유용 PDF export
+
+---
+
+## 📦 기술 스택 상세
+
+| 영역 | 사용 기술 / 라이브러리 | 비고 |
+|---|---|---|
+| Frontend | Vanilla JavaScript (ES2020+) | 프레임워크 0 |
+| 마크업 | HTML5 + 단일 파일 | 빌드 0 |
+| 스타일 | Inline CSS + CSS variables | 외부 CSS 0 |
+| PDF 처리 | PDF.js 3.11 (CDN) | 클라이언트 처리 |
+| AI | Ollama (local LLM) | vision 지원 모델 |
+| 저장소 | localStorage + JSON file | 사용자 export |
+| 백엔드 (호스팅) | Node.js + Express + PM2 | 다기기 sync 시 |
+| 터널 | Cloudflare Tunnel | 외부 접속 시 |
+| 인증 | JWT cookie (선택) | 호스팅 모드 |
+
+---
+
+## 🤝 기여 / 피드백
+
+- Issue/PR 환영합니다
+- 버그 제보 시 환경 정보 (OS / 브라우저 / Ollama 모델 / 검진지 종류) 포함 부탁드립니다
+
+---
+
+## 📄 라이선스
+
+MIT License — 자세한 내용은 [LICENSE](./LICENSE) 참조.
+
+---
+
+## 👤 개발자
+
+> 본 프로젝트는 1인 풀스택 개발 (기획·설계·구현·UI/UX·테스트·배포·문서화 전담) 결과물입니다.
+> 의학 도메인 지식 + 로컬 LLM 통합 + 클라이언트 처리 패러다임을 종합 적용한 사례입니다.
+
+문의 / 협업: GitHub Issue 또는 프로필 연락처
+
+---
+
+> 본 도구는 개인 건강 모니터링 용도입니다. **의료 진단 대체 X** — 의심 소견 발견 시 반드시 의료진 상담 필수.
