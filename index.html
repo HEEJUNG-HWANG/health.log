@@ -299,6 +299,31 @@
       display:block;font-size:9px;color:#555;text-align:right;padding:4px 8px;background:linear-gradient(90deg,transparent,#1a1a1a)
     }
   }
+
+  /* ═══════════ 📄 의료진용 PDF 출력 (window.print 기반) ═══════════ */
+  /* print 모드 진입 시 body 에 .medical-print 추가 → 화면 전체 숨김 + 리포트만 표시 */
+  .medical-report{font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#222;background:#fff}
+  .medical-report h1{font-size:20px;margin:0 0 4px;color:#000;border-bottom:2px solid #333;padding-bottom:6px}
+  .medical-report h2{font-size:13px;margin:14px 0 6px;color:#222;border-left:3px solid #c8a96e;padding-left:8px;background:#faf6ee;padding:4px 8px}
+  .medical-report table{width:100%;border-collapse:collapse;margin:4px 0 10px;font-size:11px}
+  .medical-report th,.medical-report td{border:1px solid #ccc;padding:4px 6px;text-align:left;vertical-align:top}
+  .medical-report th{background:#f0f0f0;font-weight:600;color:#000;width:30%}
+  .medical-report .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .medical-report .badge{display:inline-block;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:600;margin-right:3px}
+  .medical-report .badge-warn{background:#fff3cd;color:#856404;border:1px solid #ffeaa7}
+  .medical-report .badge-bad{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb}
+  .medical-report .badge-ok{background:#d4edda;color:#155724;border:1px solid #c3e6cb}
+  .medical-report .footnote{font-size:9px;color:#666;margin-top:14px;border-top:1px solid #ddd;padding-top:6px;line-height:1.5}
+  @media print{
+    @page{size:A4;margin:14mm 12mm}
+    body{background:#fff !important;color:#000 !important}
+    body.medical-print > *{display:none !important}
+    body.medical-print > #medical-print-area{display:block !important;position:static !important}
+    #medical-print-area{display:none}
+    .medical-report{box-shadow:none;padding:0}
+    .medical-report table{page-break-inside:avoid}
+    .medical-report h2{page-break-after:avoid}
+  }
 </style>
 </head>
 <body>
@@ -312,6 +337,7 @@
     <button class="h-btn" onclick="document.getElementById('import-input').click()">📂 불러오기</button>
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="dataImportJSON(this)">
     <button class="h-btn" onclick="openWeightModal()">⚖️ 체중</button>
+    <button class="h-btn" onclick="openMedicalPdfModal()">📄 의료진용 PDF</button>
     <button class="h-btn" onclick="openSettingsModal()">⚙️ 설정</button>
     <button class="h-btn h-btn-gold" onclick="openHelpModal()">📖 사용법</button>
   </div>
@@ -392,7 +418,7 @@
     </div>
 
     <!-- 🏥 건강검진 베이스라인 추적 (BMI / 혈압 / 콜레스테롤 목표 vs 현재) -->
-    <div class="d-section" style="margin-top:10px">🏥 건강검진 목표 추적 <span style="color:#666;font-weight:400;font-size:10px">— 건강검진 자료 입력 후 표시</span></div>
+    <div class="d-section" style="margin-top:10px">🏥 건강검진 목표 추적 <span style="color:#666;font-weight:400;font-size:10px">— 2026-04-24 KMI 검진 기준 (📋 건강검진 탭 참조)</span></div>
     <div class="d-card" id="d-checkup-targets" style="padding:10px 12px"></div>
 
     <div class="d-alert d-alert-danger d-alert-hidden" id="d-alert-constipation" style="margin-top:10px">
@@ -1080,7 +1106,7 @@
 
       <!-- 메모 / 분석 실행 -->
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
-        <input type="text" id="d-checkup-memo" placeholder="추가 설명 (선택) — 예: 검진 결과지, InBody 측정 데이터" style="flex:1;min-width:200px;background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;border-radius:4px;padding:6px 8px;font-size:11px">
+        <input type="text" id="d-checkup-memo" placeholder="추가 설명 (선택) — 예: KMI 검진 결과지, InBody770 데이터" style="flex:1;min-width:200px;background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;border-radius:4px;padding:6px 8px;font-size:11px">
         <button class="d-input-btn d-input-btn-gold" onclick="analyzeCheckupAI()" id="d-checkup-analyze-btn" style="min-width:160px">🤖 AI 분석 실행</button>
       </div>
 
@@ -1108,11 +1134,38 @@
 <!-- 모달들 -->
 <div class="modal-overlay" id="settings-modal"><div class="modal-box">
   <div class="modal-title">⚙️ 설정 <button class="modal-close" onclick="closeModal('settings-modal')">✕</button></div>
-  <div class="modal-field">
-    <label>🤖 Anthropic API 키 (선택)</label>
-    <input type="password" id="setting-api-key" placeholder="sk-ant-api03-..." autocomplete="off">
-    <div style="font-size:10px;color:#666;margin-top:3px">console.anthropic.com 에서 발급. 비워두면 수동/프롬프트 모드</div>
+  <!-- 🤖 LLM Provider 선택 + API 키 (양방향 암호화 저장) -->
+  <div style="background:#0a1500;border:1px solid #1a3a1a;border-radius:5px;padding:10px;margin-bottom:10px">
+    <div style="font-size:12px;color:#4caf50;font-weight:600;margin-bottom:6px">🤖 AI Provider (포터블 모드)</div>
+    <div class="modal-field">
+      <label>Provider 선택</label>
+      <select id="setting-llm-provider" onchange="onLlmProviderChange()">
+        <option value="ollama">Ollama (로컬, 무료, 기본)</option>
+        <option value="openai">OpenAI (GPT-4o / GPT-5 등)</option>
+        <option value="anthropic">Anthropic (Claude 3+/4+)</option>
+        <option value="google">Google (Gemini 1.5+/2+/3+)</option>
+      </select>
+    </div>
+    <div class="modal-field" id="setting-llm-apikey-wrap" style="display:none">
+      <label>API 키 <span style="font-size:10px;color:#888">— 로컬 AES-GCM 암호화 저장</span></label>
+      <input type="password" id="setting-llm-apikey" placeholder="sk-... / sk-ant-... / AIza..." autocomplete="off">
+      <div style="font-size:10px;color:#666;margin-top:3px">암호화 비밀번호 별도 입력 → 키는 절대 평문 저장 X. 매 세션 1회 복호화</div>
+    </div>
+    <div class="modal-field" id="setting-llm-pass-wrap" style="display:none">
+      <label>🔐 API 키 암호화 비밀번호</label>
+      <input type="password" id="setting-llm-pass" placeholder="이 비밀번호로 API 키 암호화/복호화" autocomplete="off">
+    </div>
+    <div class="modal-field">
+      <label>모델 (Vision 지원)</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select id="setting-llm-model" style="flex:1"><option value="">— 연결 확인 후 자동 채워짐 —</option></select>
+        <button type="button" class="d-pill" onclick="detectLlmModels()" style="white-space:nowrap">🔍 연결 확인 + 모델 감지</button>
+      </div>
+      <div id="setting-llm-status" style="font-size:10px;color:#888;margin-top:4px"></div>
+    </div>
   </div>
+  <!-- 기존 호환성용 — 백엔드 프록시 사용 시 Anthropic 직접 API 키 (호스팅 모드만 사용) -->
+  <input type="hidden" id="setting-api-key">
   <div class="modal-field">
     <label>📦 이미지 저장 방식</label>
     <select id="setting-image-mode">
@@ -1178,6 +1231,29 @@
   <div style="display:flex;gap:8px">
     <button class="d-input-btn d-input-btn-gold" style="flex:1" onclick="pdfPwConfirm()">확인</button>
     <button class="d-input-btn" style="flex:1" onclick="pdfPwCancel()">취소</button>
+  </div>
+</div></div>
+
+<!-- 📄 의료진용 PDF 미리보기 + 출력 모달 -->
+<div class="modal-overlay" id="medical-pdf-modal"><div class="modal-box" style="max-width:900px;max-height:92vh;overflow-y:auto">
+  <div class="modal-title">📄 의료진 공유용 리포트 <button class="modal-close" onclick="closeModal('medical-pdf-modal')">✕</button></div>
+
+  <div style="background:#0a1500;border:1px solid #1a3a1a;border-radius:5px;padding:10px 12px;margin-bottom:12px;font-size:11px;color:#aaa;line-height:1.6">
+    💡 <strong style="color:#4caf50">사용법</strong> — 아래 리포트 확인 후 <strong>"🖨 PDF로 출력"</strong> 클릭 → 브라우저 인쇄 다이얼로그에서 <strong>대상: PDF로 저장</strong> 선택 → 의료진 전달용 1-2 페이지 요약본 생성.<br>
+    추가 메모는 아래 텍스트박스에 입력 후 출력하면 리포트 끝에 자동 포함됩니다.
+  </div>
+
+  <div class="modal-field" style="margin-bottom:10px">
+    <label>의료진 전달 추가 메모 (선택)</label>
+    <textarea id="medical-pdf-memo" rows="3" placeholder="예: 갑상선 결절 추적검사 일정 / 마운자로 부작용 모니터링 / 운동량 증가에 따른 영양 컨설팅 요청 등" style="width:100%;background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;border-radius:4px;padding:6px 8px;font-size:12px;resize:vertical;font-family:inherit"></textarea>
+  </div>
+
+  <!-- 리포트 미리보기 -->
+  <div id="medical-pdf-preview" style="background:#fff;color:#222;border-radius:6px;padding:18px 22px;font-size:11px;line-height:1.55;border:1px solid #ccc"></div>
+
+  <div style="display:flex;gap:8px;margin-top:12px">
+    <button class="d-input-btn d-input-btn-gold" style="flex:1" onclick="printMedicalPdf()">🖨 PDF로 출력</button>
+    <button class="d-input-btn" style="flex:1" onclick="closeModal('medical-pdf-modal')">취소</button>
   </div>
 </div></div>
 
@@ -1419,6 +1495,9 @@ ollama list  # 설치 확인</pre>
   </div>
 </div></div>
 
+<!-- 📄 의료진용 PDF 출력 — print 시에만 표시되는 hidden 영역 -->
+<div id="medical-print-area"></div>
+
 <div id="toast"></div>
 
 <script>
@@ -1481,6 +1560,9 @@ function defaultData() {
       proteinGoal: 120, waterGoal: 2500,
       fiberGoal: 30, calorieGoal: 1800, apiKey: '', imageMode: 'embed',
       glp1: 'none', // 'none' | 'mounjaro' | 'wegovy' | 'other' — 위장 정체/야간 고형물 경고 활성
+      llmProvider: 'ollama', // 'ollama' | 'openai' | 'anthropic' | 'google'
+      llmModel: '', // provider별 vision 지원 모델 (사용자가 연결 확인 후 선택)
+      llmApiKeyEncrypted: '', // AES-GCM 암호화된 API 키 (base64). 평문 절대 저장 X
       customQuickProteins: [], // ⭐ 사용자 정의 빠른 입력 (영구 저장, JSON export 포함)
     },
     days: {}, weights: [],
@@ -1492,6 +1574,185 @@ function defaultData() {
 }
 
 // GLP-1 약물 투약 상태 헬퍼 — 모든 GLP-1 관련 UI/경고 분기 진입점
+// ═══════════ 🔐 Web Crypto AES-GCM + PBKDF2 (API 키 양방향 암호화) ═══════════
+// 표준 패턴: passphrase → PBKDF2 (100k iter, SHA-256) → AES-GCM 256
+// 저장 포맷: base64(salt[16] + iv[12] + ciphertext)
+async function deriveKey(passphrase, salt) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(passphrase), 'PBKDF2', false, ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+    keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt','decrypt']
+  );
+}
+async function encryptSecret(plain, passphrase) {
+  if (!plain) return '';
+  const enc = new TextEncoder();
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveKey(passphrase, salt);
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(plain));
+  const buf = new Uint8Array(salt.length + iv.length + ct.byteLength);
+  buf.set(salt, 0);
+  buf.set(iv, salt.length);
+  buf.set(new Uint8Array(ct), salt.length + iv.length);
+  return btoa(String.fromCharCode(...buf));
+}
+async function decryptSecret(b64, passphrase) {
+  if (!b64) return '';
+  try {
+    const buf = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    const salt = buf.slice(0, 16);
+    const iv = buf.slice(16, 28);
+    const ct = buf.slice(28);
+    const key = await deriveKey(passphrase, salt);
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
+    return new TextDecoder().decode(pt);
+  } catch (e) { throw new Error('복호화 실패 — 비밀번호 틀림 또는 손상된 데이터'); }
+}
+
+// ═══════════ 🤖 LLM Provider Adapter (Ollama / OpenAI / Anthropic / Google) ═══════════
+// 각 provider 의 /models endpoint 호출 → vision 지원 모델 자동 감지 + 통일된 vision API 호출
+const LLM_PROVIDERS = {
+  ollama:    { name: 'Ollama (로컬)',     keyless: true,  endpoint: 'http://localhost:11434' },
+  openai:    { name: 'OpenAI (GPT)',       keyless: false, endpoint: 'https://api.openai.com/v1' },
+  anthropic: { name: 'Anthropic (Claude)', keyless: false, endpoint: 'https://api.anthropic.com/v1' },
+  google:    { name: 'Google (Gemini)',    keyless: false, endpoint: 'https://generativelanguage.googleapis.com/v1beta' },
+};
+
+// vision 지원 모델 패턴 (provider별)
+const VISION_PATTERNS = {
+  ollama:    /gemma|llava|llama.*vision|qwen.*-vl|moondream|bakllava/i,
+  openai:    /gpt-(4o|4-vision|4-turbo|5|5\.5)|o1-vision|o3/i,
+  anthropic: /claude-(3|3\.5|3-5|opus|sonnet|haiku|4|opus-4|sonnet-4|haiku-4)/i,
+  google:    /gemini-(1\.5|2|2\.5|3|pro-vision|flash)/i,
+};
+
+// 모델 목록 fetch + vision 자동 필터
+async function fetchModels(provider, apiKey) {
+  const cfg = LLM_PROVIDERS[provider];
+  if (!cfg) throw new Error('알 수 없는 provider: ' + provider);
+  const headers = { 'content-type': 'application/json' };
+  let url;
+  if (provider === 'ollama')    { url = `${cfg.endpoint}/api/tags`; }
+  else if (provider === 'openai')    { url = `${cfg.endpoint}/models`; headers.authorization = `Bearer ${apiKey}`; }
+  else if (provider === 'anthropic') { url = `${cfg.endpoint}/models`; headers['x-api-key'] = apiKey; headers['anthropic-version'] = '2023-06-01'; }
+  else if (provider === 'google')    { url = `${cfg.endpoint}/models?key=${apiKey}`; }
+  const r = await fetch(url, { headers });
+  if (!r.ok) throw new Error(`${cfg.name} ${r.status}: ${(await r.text()).slice(0,200)}`);
+  const j = await r.json();
+  let ids = [];
+  if (provider === 'ollama')    ids = (j.models || []).map(m => m.name || m.model);
+  else if (provider === 'openai')    ids = (j.data || []).map(m => m.id);
+  else if (provider === 'anthropic') ids = (j.data || j.models || []).map(m => m.id);
+  else if (provider === 'google')    ids = (j.models || []).map(m => (m.name || '').replace(/^models\//, ''));
+  const visionPattern = VISION_PATTERNS[provider];
+  const vision = ids.filter(id => visionPattern.test(id));
+  return { all: ids, vision };
+}
+
+// 통일된 vision API 호출 — provider 별 메시지 포맷 + 응답 파싱
+async function callLLMVisionUnified({ provider, model, apiKey, prompt, system, images, numPredict = 4096 }) {
+  const cfg = LLM_PROVIDERS[provider];
+  if (!cfg) throw new Error('알 수 없는 provider: ' + provider);
+  const b64Images = (images || []).map(img => img.includes(',') ? img.split(',')[1] : img);
+
+  if (provider === 'ollama') {
+    const r = await fetch(`${cfg.endpoint}/api/generate`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model, prompt: system ? `${system}\n\n${prompt}` : prompt,
+        ...(b64Images.length ? { images: b64Images } : {}),
+        format: 'json', stream: false,
+        options: { num_predict: numPredict, temperature: 0.1 },
+      }),
+    });
+    if (!r.ok) throw new Error(`Ollama HTTP ${r.status} (OLLAMA_ORIGINS 확인)`);
+    const j = await r.json();
+    return { content: j.response || '' };
+  }
+
+  if (provider === 'openai') {
+    const content = [{ type: 'text', text: prompt }];
+    b64Images.forEach(b => content.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b}` } }));
+    const r = await fetch(`${cfg.endpoint}/chat/completions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        messages: [
+          ...(system ? [{ role: 'system', content: system }] : []),
+          { role: 'user', content },
+        ],
+        max_tokens: numPredict, temperature: 0.1,
+        response_format: { type: 'json_object' },
+      }),
+    });
+    if (!r.ok) throw new Error(`OpenAI HTTP ${r.status}: ${(await r.text()).slice(0,200)}`);
+    const j = await r.json();
+    return { content: j.choices?.[0]?.message?.content || '' };
+  }
+
+  if (provider === 'anthropic') {
+    const content = [];
+    b64Images.forEach(b => content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b } }));
+    content.push({ type: 'text', text: prompt });
+    const r = await fetch(`${cfg.endpoint}/messages`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model, max_tokens: numPredict,
+        ...(system ? { system } : {}),
+        messages: [{ role: 'user', content }],
+      }),
+    });
+    if (!r.ok) throw new Error(`Anthropic HTTP ${r.status}: ${(await r.text()).slice(0,200)}`);
+    const j = await r.json();
+    return { content: (j.content || []).map(c => c.text || '').join('') };
+  }
+
+  if (provider === 'google') {
+    const parts = [{ text: prompt }];
+    b64Images.forEach(b => parts.push({ inline_data: { mime_type: 'image/jpeg', data: b } }));
+    const r = await fetch(`${cfg.endpoint}/models/${model}:generateContent?key=${apiKey}`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts }],
+        ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
+        generationConfig: { maxOutputTokens: numPredict, temperature: 0.1, responseMimeType: 'application/json' },
+      }),
+    });
+    if (!r.ok) throw new Error(`Google HTTP ${r.status}: ${(await r.text()).slice(0,200)}`);
+    const j = await r.json();
+    return { content: (j.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('') };
+  }
+  throw new Error('지원되지 않는 provider: ' + provider);
+}
+
+// 활성 provider 가져오기 (settings 에서 — apiKey 는 암호화 저장된 것 복호화 필요)
+async function getActiveLLMConfig() {
+  const s = DATA.settings || {};
+  const provider = s.llmProvider || 'ollama';
+  const model = s.llmModel || (provider === 'ollama' ? 'gemma4:31b-cloud' : '');
+  let apiKey = '';
+  if (provider !== 'ollama') {
+    const enc = s.llmApiKeyEncrypted;
+    if (!enc) throw new Error('API 키 미설정 — ⚙️ 설정에서 입력');
+    const pass = window._llmPassphrase || prompt(`🔐 ${LLM_PROVIDERS[provider].name} API 키 복호화 비밀번호:`);
+    if (!pass) throw new Error('비밀번호 입력 취소');
+    apiKey = await decryptSecret(enc, pass);
+    window._llmPassphrase = pass; // 세션 동안 메모리 유지
+  }
+  return { provider, model, apiKey };
+}
+
 function glp1Active() { return (DATA.settings.glp1 || 'none') !== 'none'; }
 function glp1Label() {
   const m = { mounjaro: '마운자로', wegovy: '위고비', other: 'GLP-1 약물', none: '' };
@@ -2124,41 +2385,42 @@ function dAddCustomProtein() {
 // ───── 📦 신제품 즐겨찾기 등록 (이미지 2장 + AI 자동 분석) ─────
 const _newProduct = { productImage: null, nutritionImage: null };
 
+// 식단/피트니스/수면 vision 분석 — provider adapter 통일
+// 환경 분기: krrr.cloud (호스팅) → 백엔드 프록시 / file:// (포터블) → 선택된 provider 직접 호출
 async function callVisionAPI(imageDataURL, type) {
-  // 환경 분기: file:// (원본) -> Ollama 직접, krrr.cloud -> 백엔드 프록시
   const isFile = location.protocol === 'file:' || !location.hostname;
-  if (isFile) {
-    const b64 = imageDataURL.includes(',') ? imageDataURL.split(',')[1] : imageDataURL;
-    const prompts = {
-      'apple-fitness': '이 애플 피트니스 스크린샷에서 burnedCal(소모kcal 정수), activeMin(운동분 정수), steps(걸음수 정수), intensity(강도 0-10 정수) 추출. JSON만. 없으면 null. {"burnedCal":0,"activeMin":0,"steps":0,"intensity":null}',
-      'autosleep': '이 AutoSleep 스크린샷에서 totalHours(총수면시간 소수1자리, "7시간 33분"->7.55), score(0-100정수), deepHours, remHours 추출. JSON만. {"totalHours":0,"score":0,"deepHours":0,"remHours":0}',
-      'nutrition': '이 영양성분표에서 name(제품명), protein(단백질g 소수), calories(kcal 정수), fiber, carbs, fat, saturatedFat(포화지방g), sodium(mg) 추출. 1회 제공량 기준. JSON만. {"name":"","protein":0,"calories":0,"fiber":0,"carbs":0,"fat":0,"saturatedFat":0,"sodium":0}',
-    };
-    const r = await fetch('http://localhost:11434/api/generate', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'gemma4:31b-cloud',
-        prompt: prompts[type] || prompts.nutrition,
-        images: [b64], format: 'json', stream: false,
-        options: { num_predict: 2048, temperature: 0.1 },
-      }),
-    });
-    if (!r.ok) throw new Error('Ollama HTTP ' + r.status + ' (OLLAMA_ORIGINS 설정 확인)');
-    const j = await r.json();
-    let content = String(j.response || '').replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/, '').trim();
-    try { return { ok: true, data: JSON.parse(content) }; }
-    catch {
-      const m = content.match(/\{[\s\S]*\}/);
-      if (m) { try { return { ok: true, data: JSON.parse(m[0]) }; } catch {} }
-      return { ok: false, message: 'AI 응답 JSON 파싱 실패', rawContent: content.slice(0, 200) };
-    }
-  } else {
+  const prompts = {
+    'apple-fitness': '이 애플 피트니스 스크린샷에서 burnedCal(소모kcal 정수), activeMin(운동분 정수), steps(걸음수 정수), intensity(강도 0-10 정수) 추출. JSON만. 없으면 null. {"burnedCal":0,"activeMin":0,"steps":0,"intensity":null}',
+    'autosleep': '이 AutoSleep 스크린샷에서 totalHours(총수면시간 소수1자리, "7시간 33분"->7.55), score(0-100정수), deepHours, remHours 추출. JSON만. {"totalHours":0,"score":0,"deepHours":0,"remHours":0}',
+    'nutrition': '이 영양성분표에서 name(제품명), protein(단백질g 소수), calories(kcal 정수), fiber, carbs, fat, saturatedFat(포화지방g), sodium(mg) 추출. 1회 제공량 기준. JSON만. {"name":"","protein":0,"calories":0,"fiber":0,"carbs":0,"fat":0,"saturatedFat":0,"sodium":0}',
+  };
+  if (!isFile) {
+    // 호스팅 모드 — 백엔드 프록시 (Ollama 자동 연동)
     const r = await fetch('/api/diet/vision', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify({ image: imageDataURL, type }),
     });
     return r.json();
+  }
+  // 포터블 모드 — 선택된 provider 직접 호출
+  try {
+    const { provider, model, apiKey } = await getActiveLLMConfig();
+    const result = await callLLMVisionUnified({
+      provider, model, apiKey,
+      prompt: prompts[type] || prompts.nutrition,
+      images: [imageDataURL],
+      numPredict: 2048,
+    });
+    let content = String(result.content || '').replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/, '').trim();
+    try { return { ok: true, data: JSON.parse(content) }; }
+    catch {
+      const m = content.match(/\{[\s\S]*\}/);
+      if (m) { try { return { ok: true, data: JSON.parse(m[0]) }; } catch {} }
+      return { ok: false, message: 'AI 응답 JSON 파싱 실패', rawContent: content.slice(0, 200) };
+    }
+  } catch (e) {
+    return { ok: false, message: e.message };
   }
 }
 
@@ -2300,33 +2562,30 @@ JSON 만 출력 — markdown fence(\\\`\\\`\\\`json) 없이.${memo ? '\n\n참고
 async function callCheckupAnalysis({ images, text, memo }) {
   const isFile = location.protocol === 'file:' || !location.hostname;
   const prompt = buildCheckupPrompt(text, memo);
-  if (isFile) {
-    const b64s = (images || []).map(d => d.includes(',') ? d.split(',')[1] : d);
-    const body = {
-      model: 'gemma4:31b-cloud',
-      prompt, format: 'json', stream: false,
-      options: { num_predict: 8192, temperature: 0.1 },
-    };
-    if (b64s.length) body.images = b64s;
-    const r = await fetch('http://localhost:11434/api/generate', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-    });
-    if (!r.ok) throw new Error('Ollama HTTP ' + r.status + ' (OLLAMA_ORIGINS 설정 확인 — 📖 사용법 모달 2️⃣ 단계)');
-    const j = await r.json();
-    let content = String(j.response || '').replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/, '').trim();
-    try { return { ok: true, data: JSON.parse(content) }; }
-    catch {
-      const m = content.match(/\{[\s\S]*\}/);
-      if (m) { try { return { ok: true, data: JSON.parse(m[0]) }; } catch {} }
-      return { ok: false, message: 'AI 응답 JSON 파싱 실패', rawContent: content.slice(0, 300) };
-    }
-  } else {
+  if (!isFile) {
     const r = await fetch('/api/diet/vision', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify({ images: images || [], text: text || '', memo: memo || '', type: 'checkup' }),
     });
     return r.json();
+  }
+  // 포터블 — 선택된 provider 직접 호출
+  try {
+    const { provider, model, apiKey } = await getActiveLLMConfig();
+    const result = await callLLMVisionUnified({
+      provider, model, apiKey,
+      prompt, images: images || [], numPredict: 8192,
+    });
+    let content = String(result.content || '').replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/, '').trim();
+    try { return { ok: true, data: JSON.parse(content) }; }
+    catch {
+      const m = content.match(/\{[\s\S]*\}/);
+      if (m) { try { return { ok: true, data: JSON.parse(m[0]) }; } catch {} }
+      return { ok: false, message: 'AI 응답 JSON 파싱 실패', rawContent: content.slice(0, 300) };
+    }
+  } catch (e) {
+    return { ok: false, message: e.message };
   }
 }
 
@@ -3928,6 +4187,183 @@ function openWeightModal() {
   document.getElementById('weight-modal').classList.add('open');
 }
 
+// ═══════════ 📄 의료진 공유용 PDF 리포트 ═══════════
+// 데이터 수집 + 통계 계산 + DOM 생성 → window.print() 호출
+// 의존성 0 (window.print + @media print stylesheet), 한글 완벽, vector text (검색/선택 가능)
+function buildMedicalReport() {
+  const s = DATA.settings || {};
+  const today = new Date().toISOString().slice(0,10);
+  const weights = (DATA.weights || []).slice().sort((a,b) => a.date.localeCompare(b.date));
+  const startW = s.startWeight ?? weights[0]?.weight ?? null;
+  const goalW = s.goalWeight ?? null;
+  const latestW = weights[weights.length-1]?.weight ?? startW;
+  const lost = (startW != null && latestW != null) ? +(startW - latestW).toFixed(1) : null;
+  const totalGap = (startW != null && goalW != null) ? +(startW - goalW).toFixed(1) : null;
+  const progressPct = (lost != null && totalGap > 0) ? Math.round((lost / totalGap) * 1000) / 10 : null;
+  const h = s.height;
+  const bmi = (latestW && h) ? calcBMI(latestW, h) : null;
+  const goalBMI = (goalW && h) ? calcBMI(goalW, h) : null;
+
+  // BMR / TDEE (체성분 데이터 있으면 Katch 우선)
+  const checkup = DATA.checkup || {};
+  const age = checkup.meta?.age ?? 30;
+  const sex = checkup.meta?.sex ?? '미상';
+  const bodyFat = checkup.metrics?.find(m => m.key === 'bodyFat')?.value ?? null;
+  const skMuscle = checkup.metrics?.find(m => m.key === 'skeletalMuscle')?.value ?? null;
+  const bmrInbody = checkup.metrics?.find(m => m.key === 'bmrInbody')?.value ?? null;
+  const lbm = (bodyFat != null && latestW) ? +(latestW * (1 - bodyFat / 100)).toFixed(1) : null;
+  const bmrM = (latestW && h) ? calcBMR_MifflinStJeor(latestW, h, age, sex) : null;
+  const bmrK = (latestW && bodyFat != null) ? calcBMR_KatchMcArdle(latestW, bodyFat) : null;
+  const bmrPrimary = bmrInbody || bmrK || bmrM;
+  const activity = 1.55;
+  const tdee = bmrPrimary ? Math.round(bmrPrimary * activity) : null;
+  const recommend = tdee ? tdee - 500 : null;
+
+  // 최근 14일 평균 (단백질/칼로리/운동/걸음/수면)
+  const days = DATA.days || {};
+  const last14 = [];
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const k = d.toISOString().slice(0,10);
+    if (days[k]) last14.push(days[k]);
+  }
+  const avg = (arr, fn) => {
+    const vals = arr.map(fn).filter(v => v != null && !isNaN(v));
+    return vals.length ? Math.round(vals.reduce((a,b) => a+b, 0) / vals.length) : null;
+  };
+  const avgProt = avg(last14, d => d.totalProt);
+  const avgCal = avg(last14, d => d.totalCal);
+  const avgSteps = avg(last14, d => d.steps);
+  const avgSleep = avg(last14, d => d.sleepHours ? d.sleepHours * 10 : null);
+  const avgSleepH = avgSleep ? (avgSleep / 10).toFixed(1) : null;
+  const exerciseDays = last14.filter(d => (d.exercises || []).length > 0).length;
+
+  // 검진 의심 질환 + cvdRisk
+  const suspect = Array.isArray(checkup.summary?.suspect) ? checkup.summary.suspect : [];
+  const caution = Array.isArray(checkup.summary?.caution) ? checkup.summary.caution : [];
+  const cvd = checkup.summary?.cvdRisk;
+
+  // 검진 metrics — 의료진 관심 항목만 선별
+  const interestMetrics = ['sbp','dbp','tc','ldl','hdl','tg','alt','ast','ggt','fbs','hba1c','uricAcid','creatinine','egfr','psa','tsh'];
+  const metricRows = (checkup.metrics || [])
+    .filter(m => interestMetrics.includes(m.key) && m.value != null)
+    .map(m => ({
+      label: m.label || m.key,
+      value: `${m.value}${m.unit ? ' ' + m.unit : ''}`,
+      ref: m.ref || '—',
+      status: m.status || 'normal',
+      note: m.note || '',
+    }));
+
+  // GLP-1 약물 정보
+  const glp1Map = { mounjaro: '마운자로 (티르제파타이드)', wegovy: '위고비 (세마글루타이드)', other: '기타 GLP-1', none: '미사용' };
+  const glp1Status = glp1Map[s.glp1 || 'none'];
+
+  const safe = v => (v == null || v === '' || isNaN(v)) ? '—' : v;
+  const memo = (document.getElementById('medical-pdf-memo')?.value || '').trim();
+  const badge = status => {
+    const m = { normal: ['ok','정상'], warning: ['warn','주의'], abnormal: ['bad','이상'] };
+    const [cls, label] = m[status] || ['', status || '—'];
+    return `<span class="badge badge-${cls}">${label}</span>`;
+  };
+
+  // 본문 조립
+  return `
+<div class="medical-report">
+  <h1>🩺 환자 건강 모니터링 리포트</h1>
+  <div style="font-size:10px;color:#666;margin-bottom:14px">
+    출력일: ${today} · 모니터링 도구: health.log v1 (자가 기록 + 로컬 AI 분석)
+  </div>
+
+  <h2>1. 환자 기본 정보</h2>
+  <table>
+    <tr><th>나이 / 성별</th><td>${safe(age)}세 · ${safe(sex)}</td></tr>
+    <tr><th>키</th><td>${safe(h)} cm</td></tr>
+    <tr><th>시작 체중 → 현재 체중 → 목표</th><td>${safe(startW)} kg → <strong>${safe(latestW)} kg</strong> → ${safe(goalW)} kg</td></tr>
+    <tr><th>BMI (현재 → 목표)</th><td>${safe(bmi)} → ${safe(goalBMI)} ${bmi != null ? badge(bmiCategory(bmi).label === '정상' ? 'normal' : (bmi >= 30 ? 'abnormal' : 'warning')) : ''}</td></tr>
+    <tr><th>모니터링 시작일</th><td>${safe(s.startDate)} (${weights.length}일 기록)</td></tr>
+    <tr><th>약물 사용</th><td><strong>${glp1Status}</strong>${s.glp1 && s.glp1 !== 'none' ? ' — 위장 정체 / 야간 고형물 모니터링 진행 중' : ''}</td></tr>
+  </table>
+
+  <h2>2. 감량 추이</h2>
+  <table>
+    <tr><th>총 감량</th><td>${lost != null ? `${lost} kg (시작 대비 ${safe(startW ? +(lost/startW*100).toFixed(1) : null)}%)` : '—'}</td></tr>
+    <tr><th>목표까지 진행률</th><td>${progressPct != null ? `<strong>${progressPct}%</strong> · 남은 ${totalGap ? +(totalGap - lost).toFixed(1) : '—'} kg` : '—'}</td></tr>
+    <tr><th>측정 기록 수</th><td>${weights.length}회</td></tr>
+  </table>
+
+  <h2>3. 일일 칼로리 소비 분석 (현재 체중 기준)</h2>
+  <table>
+    <tr><th>BMR — Mifflin-St Jeor (체중·키·나이)</th><td>${safe(bmrM)} kcal</td></tr>
+    ${bmrK != null ? `<tr><th>BMR — Katch-McArdle (LBM 기반)</th><td>${bmrK} kcal · LBM ${safe(lbm)} kg</td></tr>` : ''}
+    ${bmrInbody != null ? `<tr><th>BMR — InBody 직접 측정</th><td><strong>${bmrInbody} kcal</strong> (측정 시점 ${checkup.meta?.bodyCompositionMeasuredAt || '—'})</td></tr>` : ''}
+    <tr><th>TDEE (활동계수 ×${activity} 중강도 기준)</th><td><strong>${safe(tdee)} kcal/day</strong></td></tr>
+    <tr><th>권장 섭취 (TDEE − 500, 주 0.5kg 감량)</th><td><strong style="color:#0a6e2c">${safe(recommend)} kcal/day</strong></td></tr>
+    <tr><th>현재 설정 칼로리 목표</th><td>${safe(s.calorieGoal)} kcal/day${(s.calorieGoal && recommend && Math.abs(s.calorieGoal - recommend) >= 100) ? ` ${badge('warning')} 권장 대비 ${s.calorieGoal > recommend ? '+' : ''}${s.calorieGoal - recommend} kcal` : ''}</td></tr>
+  </table>
+
+  <h2>4. 최근 14일 일평균 (자가 기록 기반)</h2>
+  <table>
+    <tr><th>단백질 섭취 평균</th><td>${avgProt != null ? `${avgProt} g/day` : '—'} · 목표 ${s.proteinGoal || '—'} g</td></tr>
+    <tr><th>칼로리 섭취 평균</th><td>${avgCal != null ? `${avgCal} kcal/day` : '—'} · 목표 ${s.calorieGoal || '—'} kcal</td></tr>
+    <tr><th>걸음수 평균</th><td>${avgSteps != null ? `${avgSteps.toLocaleString()} 보/day` : '—'}</td></tr>
+    <tr><th>수면 평균</th><td>${avgSleepH != null ? `${avgSleepH} 시간/day` : '—'}</td></tr>
+    <tr><th>운동 기록 일수</th><td>${exerciseDays} / 14일</td></tr>
+    <tr><th>기록 일수 (식사)</th><td>${last14.length} / 14일</td></tr>
+  </table>
+
+  ${suspect.length || caution.length || cvd ? `
+    <h2>5. 검진 결과 — 의심 / 주의 / 위험도</h2>
+    ${suspect.length ? `<div style="margin:6px 0"><strong>▷ 의심 질환 (${suspect.length}건)</strong><ul style="margin:3px 0 6px 18px;padding:0">${suspect.map(s => `<li style="font-size:11px">${s}</li>`).join('')}</ul></div>` : ''}
+    ${caution.length ? `<div style="margin:6px 0"><strong>▷ 주의 사항 (${caution.length}건)</strong><ul style="margin:3px 0 6px 18px;padding:0">${caution.map(s => `<li style="font-size:11px">${s}</li>`).join('')}</ul></div>` : ''}
+    ${cvd ? `<table>
+      ${cvd.ratio != null ? `<tr><th>심뇌혈관 위험도 (10년 내)</th><td><strong>${cvd.ratio}배</strong> (동연령/성별 평균 대비)</td></tr>` : ''}
+      ${cvd.riskNow != null ? `<tr><th>현재 위험률 → 개선 시</th><td>${cvd.riskNow}% → ${safe(cvd.riskImproved)}% ${(cvd.riskNow && cvd.riskImproved) ? `(${Math.round((1-cvd.riskImproved/cvd.riskNow)*100)}% 감소 가능)` : ''}</td></tr>` : ''}
+      ${cvd.vesselAge != null ? `<tr><th>심뇌혈관 나이 → 개선 시</th><td>${cvd.vesselAge}세 → ${safe(cvd.vesselAgeImproved)}세</td></tr>` : ''}
+    </table>` : ''}
+  ` : ''}
+
+  ${metricRows.length ? `
+    <h2>6. 주요 검사 수치</h2>
+    <table>
+      <tr><th>항목</th><th style="width:25%">결과</th><th style="width:20%">참고치</th><th style="width:15%">판정</th></tr>
+      ${metricRows.map(m => `<tr><td>${m.label}</td><td><strong>${m.value}</strong>${m.note ? `<div style="font-size:9px;color:#666;margin-top:2px">${m.note}</div>` : ''}</td><td>${m.ref}</td><td>${badge(m.status)}</td></tr>`).join('')}
+    </table>
+  ` : ''}
+
+  ${memo ? `<h2>7. 의료진 전달 메모</h2><div style="border:1px solid #ccc;padding:8px;font-size:11px;white-space:pre-wrap;line-height:1.6">${memo.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</div>` : ''}
+
+  <div class="footnote">
+    ⚠ 본 리포트는 환자 자가 기록 + 로컬 AI 분석 기반입니다. 의료 진단을 대체하지 않으며, 검진 metrics 는 환자가 업로드한 자료에서 자동 추출되었습니다.<br>
+    BMR 계산: Mifflin-St Jeor (1990) / Katch-McArdle (LBM 기반) / InBody 직접 측정 비교.<br>
+    단백질 권장 기준: ISSN 2017 Sports Nutrition Guidelines (1.6-2.4 g/kg).<br>
+    BMI 분류: 대한비만학회 2022 (아시아인).
+  </div>
+</div>
+  `;
+}
+
+function openMedicalPdfModal() {
+  document.getElementById('medical-pdf-memo').value = '';
+  document.getElementById('medical-pdf-preview').innerHTML = buildMedicalReport();
+  document.getElementById('medical-pdf-modal').classList.add('open');
+}
+
+function printMedicalPdf() {
+  // 메모 반영 위해 미리보기 다시 빌드
+  const html = buildMedicalReport();
+  document.getElementById('medical-print-area').innerHTML = html;
+  document.body.classList.add('medical-print');
+  // afterprint 이벤트로 정리 (취소해도 발동)
+  const cleanup = () => {
+    document.body.classList.remove('medical-print');
+    document.getElementById('medical-print-area').innerHTML = '';
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  setTimeout(() => window.print(), 100);
+}
+
 // 📖 사용법 모달 — 환경에 맞는 안내 표시
 function openHelpModal() {
   const envBanner = document.getElementById('help-env-banner');
@@ -4358,10 +4794,63 @@ function openSettingsModal() {
   document.getElementById('setting-goal-weight').value = DATA.settings.goalWeight;
   document.getElementById('setting-start-date').value = DATA.settings.startDate;
   document.getElementById('setting-glp1').value = DATA.settings.glp1 || 'none';
+  // LLM provider 복원
+  const llmProvider = DATA.settings.llmProvider || 'ollama';
+  document.getElementById('setting-llm-provider').value = llmProvider;
+  document.getElementById('setting-llm-apikey').value = ''; // 보안 — 평문 표시 X
+  document.getElementById('setting-llm-pass').value = '';
+  const modelSel = document.getElementById('setting-llm-model');
+  modelSel.innerHTML = '<option value="' + (DATA.settings.llmModel || '') + '">' + (DATA.settings.llmModel || '— 미선택 —') + '</option>';
+  onLlmProviderChange();
+  document.getElementById('setting-llm-status').textContent = DATA.settings.llmModel
+    ? `현재 설정: ${LLM_PROVIDERS[llmProvider]?.name} / ${DATA.settings.llmModel}` : '미설정';
   document.getElementById('settings-modal').classList.add('open');
 }
 
-function saveSettings() {
+function onLlmProviderChange() {
+  const provider = document.getElementById('setting-llm-provider').value;
+  const isOllama = provider === 'ollama';
+  document.getElementById('setting-llm-apikey-wrap').style.display = isOllama ? 'none' : '';
+  document.getElementById('setting-llm-pass-wrap').style.display = isOllama ? 'none' : '';
+}
+
+async function detectLlmModels() {
+  const provider = document.getElementById('setting-llm-provider').value;
+  const statusEl = document.getElementById('setting-llm-status');
+  const modelSel = document.getElementById('setting-llm-model');
+  statusEl.style.color = '#64b5f6';
+  statusEl.textContent = '🔍 모델 목록 fetch 중...';
+  try {
+    let apiKey = '';
+    if (provider !== 'ollama') {
+      apiKey = document.getElementById('setting-llm-apikey').value.trim();
+      if (!apiKey) {
+        // 기존 암호화 키 사용 시도
+        const enc = DATA.settings.llmApiKeyEncrypted;
+        const pass = document.getElementById('setting-llm-pass').value;
+        if (enc && pass) {
+          apiKey = await decryptSecret(enc, pass);
+        } else {
+          throw new Error('API 키 또는 (저장된 키 + 비밀번호) 필요');
+        }
+      }
+    }
+    const { all, vision } = await fetchModels(provider, apiKey);
+    if (!vision.length) {
+      statusEl.style.color = '#ff9035';
+      statusEl.textContent = `⚠ vision 지원 모델 없음 (총 ${all.length}개 중 0개 매칭). 최신 모델 사용 필요`;
+      return;
+    }
+    modelSel.innerHTML = vision.map(id => `<option value="${id}">${id}</option>`).join('');
+    statusEl.style.color = '#4caf50';
+    statusEl.textContent = `✓ ${vision.length} vision 모델 감지 (전체 ${all.length}개 중) — 위에서 선택 후 저장`;
+  } catch (e) {
+    statusEl.style.color = '#ff6b35';
+    statusEl.textContent = '❌ ' + e.message;
+  }
+}
+
+async function saveSettings() {
   DATA.settings.apiKey = document.getElementById('setting-api-key').value.trim();
   DATA.settings.imageMode = document.getElementById('setting-image-mode').value;
   DATA.settings.proteinGoal = parseInt(document.getElementById('setting-prot-goal').value) || 120;
@@ -4370,10 +4859,26 @@ function saveSettings() {
   DATA.settings.calorieGoal = parseInt(document.getElementById('setting-cal-goal').value) || 1800;
   DATA.settings.height = parseFloat(document.getElementById('setting-height').value) || 170;
   DATA.settings.startWeight = parseFloat(document.getElementById('setting-start-weight').value) || 80;
-  DATA.settings.goalWeight = parseFloat(document.getElementById('setting-goal-weight').value) || 70;
+  DATA.settings.goalWeight = parseFloat(document.getElementById('setting-goal-weight').value) || 65;
   DATA.settings.startDate = document.getElementById('setting-start-date').value || new Date().toISOString().slice(0,10);
   DATA.settings.glp1 = document.getElementById('setting-glp1').value || 'none';
-  // CRITICAL: timestamp 갱신 — 안 하면 mergeDietData(1408줄)가 server stale 값으로 force overwrite (silent fail)
+
+  // LLM provider + 암호화 저장
+  const llmProvider = document.getElementById('setting-llm-provider').value || 'ollama';
+  const llmModel = document.getElementById('setting-llm-model').value || '';
+  DATA.settings.llmProvider = llmProvider;
+  DATA.settings.llmModel = llmModel;
+  const newApiKey = document.getElementById('setting-llm-apikey').value.trim();
+  const passphrase = document.getElementById('setting-llm-pass').value;
+  if (llmProvider !== 'ollama' && newApiKey) {
+    if (!passphrase) { toast('❌ API 키 입력 시 암호화 비밀번호 필수'); return; }
+    try {
+      DATA.settings.llmApiKeyEncrypted = await encryptSecret(newApiKey, passphrase);
+      window._llmPassphrase = passphrase; // 세션 메모리 유지 — 분석 호출 시 재입력 X
+      toast('🔐 API 키 암호화 저장 완료');
+    } catch (e) { toast('❌ 암호화 실패: ' + e.message); return; }
+  }
+
   DATA.settings._goalsUpdatedAt = Date.now();
   saveData(); applyGlp1Visibility(); dUpdateAll(); renderWeightLog(); refreshApiCard();
   closeModal('settings-modal');

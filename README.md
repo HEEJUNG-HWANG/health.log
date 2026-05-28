@@ -290,10 +290,10 @@ curl http://localhost:11434/api/tags
 
 - [ ] 영문 i18n (현재 한국어만)
 - [ ] 모바일 PWA 변환 (현재 file:// + 브라우저)
-- [ ] 추가 AI 모델 자동 감지 (claude/openai/gemini API 옵션)
+- [x] **추가 AI 모델 자동 감지 (Claude/OpenAI/Gemini API)** — Web Crypto AES-GCM 양방향 암호화 + `/models` endpoint 자동 감지 + vision 지원 모델 필터링
 - [ ] 운동 사진 분석 (자세 / 폼 체크)
 - [ ] InBody 시계열 trend 그래프
-- [ ] 의료진 공유용 PDF export
+- [x] **의료진 공유용 PDF export** — `window.print()` + `@media print` (의존성 0, 한글 완벽, vector text)
 
 ---
 
