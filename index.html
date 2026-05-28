@@ -12,7 +12,9 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   }
 </script>
-<!-- heic2any CDN — 아이폰 HEIC/HEIF 이미지 → JPEG 자동 변환 (Chrome/Firefox/Edge 등 HEIC 미지원 브라우저 대응) -->
+<!-- HEIC/HEIF → JPEG 자동 변환 (아이폰 에어드랍 이미지 호환) -->
+<!-- heic-to (1.5.2, libheif 1.21.2) — iOS 17+ 신규 HEIC 형식 지원. heic2any (legacy) 는 fallback -->
+<script src="https://cdn.jsdelivr.net/npm/heic-to@1.5.2/dist/iife/heic-to.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
@@ -2500,20 +2502,44 @@ async function pdfToImages(file, scale = 1.5) {
 }
 
 // 📱 HEIC/HEIF → JPEG 변환 (아이폰 에어드랍 이미지 호환)
-// 브라우저 대부분 HEIC 미지원 — heic2any CDN 으로 클라이언트 변환
+// 브라우저 대부분 HEIC 미지원 — heic-to (libheif 1.21.2, iOS 17+ HEIC 지원) 우선 + heic2any fallback
 async function normalizeImageFile(file) {
   if (!file) return file;
   const isHeic = /heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name);
   if (!isHeic) return file;
-  if (!window.heic2any) throw new Error('HEIC 변환 라이브러리 로드 실패 — 인터넷 연결 확인 필요 (첫 로드 후 브라우저 캐시)');
-  try {
-    const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
-    const blob = Array.isArray(result) ? result[0] : result;
-    const newName = file.name.replace(/\.(heic|heif)$/i, '.jpg');
-    return new File([blob], newName, { type: 'image/jpeg', lastModified: file.lastModified || Date.now() });
-  } catch (e) {
-    throw new Error(`HEIC 변환 실패 (${file.name}): ${e.message}`);
+  const newName = file.name.replace(/\.(heic|heif)$/i, '.jpg');
+  const toFile = blob => new File([blob], newName, { type: 'image/jpeg', lastModified: file.lastModified || Date.now() });
+
+  // 1순위: heic-to (최신 libheif, iOS 17+ HEIC10/HEIF 신규 형식 지원)
+  if (window.HeicTo) {
+    try {
+      const blob = await HeicTo({ blob: file, type: 'image/jpeg', quality: 0.85 });
+      return toFile(Array.isArray(blob) ? blob[0] : blob);
+    } catch (e1) {
+      console.warn('[heic-to] 실패, heic2any fallback 시도:', e1.message);
+      // 2순위 fallback
+      if (window.heic2any) {
+        try {
+          const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+          return toFile(Array.isArray(blob) ? blob[0] : blob);
+        } catch (e2) {
+          throw new Error(`HEIC 변환 실패 (${file.name}): 두 라이브러리 모두 실패. heic-to: ${e1.message} / heic2any: ${e2.message}`);
+        }
+      }
+      throw new Error(`HEIC 변환 실패 (${file.name}): ${e1.message}`);
+    }
   }
+
+  // heic-to 미로드 시 heic2any 단독
+  if (window.heic2any) {
+    try {
+      const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+      return toFile(Array.isArray(blob) ? blob[0] : blob);
+    } catch (e) {
+      throw new Error(`HEIC 변환 실패 (${file.name}): ${e.message}`);
+    }
+  }
+  throw new Error('HEIC 변환 라이브러리 로드 실패 — 인터넷 연결 확인 필요 (첫 로드 후 브라우저 캐시)');
 }
 
 function fileToDataURL(file) {
