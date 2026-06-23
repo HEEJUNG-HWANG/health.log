@@ -108,6 +108,25 @@
   .d-tag-alert{background:#2a0808;border:1px solid #5a1a1a;color:#ff6b6b}
   .d-tag-meal{background:#1a1a1a;border:1px solid #2a2a2a;color:#888}
   .d-tag-c{background:#2a1500;border:1px solid #5a3010;color:#ff9035;font-weight:600}
+  /* ⏱ 오토파지 타이머 */
+  .d-fast-hero{text-align:center;background:linear-gradient(160deg,#1d1a12,#161616);border-color:#3a3320}
+  .d-fast-status{font-size:11px;color:#888;letter-spacing:.05em;text-transform:uppercase}
+  .d-fast-clock{font-size:46px;font-weight:700;color:#c8a96e;line-height:1.1;margin:6px 0;font-variant-numeric:tabular-nums;letter-spacing:1px}
+  .d-fast-phase{font-size:12px;color:#e0e0e0;min-height:18px;padding:0 4px}
+  .d-fast-meta{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#777;margin-bottom:12px;flex-wrap:wrap}
+  .d-fast-controls{display:flex;gap:8px;justify-content:center}
+  .d-fast-cap{color:#666;font-weight:400;font-size:10px;text-transform:none;letter-spacing:0}
+  .d-fast-tpl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+  .d-fast-tpl-title{font-size:13px;font-weight:700;color:#e0e0e0;margin-bottom:2px}
+  .d-fast-tpl-sub{font-size:10px;color:#c8a96e;margin-bottom:8px}
+  .d-fast-tpl-list{margin:0 0 10px;padding-left:16px;font-size:11px;color:#aaa;line-height:1.6}
+  .d-fast-ms-active .d-tl-name{color:#c8a96e;font-weight:700}
+  .d-fast-ms-active .d-tl-dot{box-shadow:0 0 0 3px rgba(200,169,110,.25)}
+  .d-fast-ms-done{opacity:.5}
+  .d-fast-hist-row{display:flex;justify-content:space-between;align-items:center;background:#161616;border:1px solid #2a2a2a;border-radius:6px;padding:8px 10px;font-size:11px;margin-bottom:5px}
+  .d-fast-hist-del{background:none;border:none;color:#555;cursor:pointer;font-size:13px;padding:2px 8px;min-height:32px}
+  .d-fast-hist-del:hover{color:#ff6b6b}
+  .d-pill.active{border-color:#c8a96e;color:#c8a96e;background:#252017}
   /* 즐겨찾기 chip — 모바일 분리형 (nested clickable 함정 회피) */
   .d-fav-wrap{transition:all .15s;touch-action:manipulation}
   .d-fav-wrap:hover{border-color:#4caf50 !important;background:#0f2510 !important}
@@ -333,7 +352,7 @@
 <body>
 
 <header>
-  <div><span class="logo">🩺 health<span style="color:#666">.</span>log<span class="ver">portable v1</span></span></div>
+  <div><span class="logo">🩺 health<span style="color:#666">.</span>log<span class="ver">portable v2</span></span></div>
   <div class="header-actions">
     <span id="today-weight-badge">— kg</span>
     <span id="today-bmi-badge" style="color:#ffd54f;font-weight:700;font-size:12px;padding:0 6px;border-left:1px solid #333">BMI —</span>
@@ -354,6 +373,7 @@
     <button class="d-stab" onclick="dSwitchTab('calendar')">📅 캘린더</button>
     <button class="d-stab" onclick="dSwitchTab('scan')">📸 식단 스캔</button>
     <button class="d-stab" id="d-stab-flow" onclick="dSwitchTab('flow')" style="display:none">⏱ 타이밍 플로우</button>
+    <button class="d-stab" onclick="dSwitchTab('fasting')">⏱ 오토파지 타이머</button>
     <button class="d-stab" onclick="dSwitchTab('exercise')">🏋️ 운동 스케줄</button>
     <button class="d-stab" onclick="dSwitchTab('alerts')">🔔 경고 조건</button>
     <button class="d-stab" onclick="dSwitchTab('log')">📈 체중 로그</button>
@@ -723,6 +743,91 @@
         <div class="d-tl-row"><div class="d-tl-time">23:30</div><div class="d-tl-spine"><div class="d-tl-dot" style="background:#444"></div></div><div class="d-tl-body"><div class="d-tl-tags"><span class="d-tag d-tag-meal">취침 전</span></div><div class="d-tl-name">일일 단백질 점검</div><div class="d-tl-desc">목표 미달 시 액상 단백질 보충 (generic 템플릿)</div></div></div>
       </div>
     </div>
+  </div>
+
+  <!-- ═══════════ 오토파지 타이머 탭 ═══════════ -->
+  <div class="d-spanel" id="d-spanel-fasting">
+
+    <!-- 라이브 단식 타이머 -->
+    <div class="d-card d-fast-hero">
+      <div class="d-fast-status" id="d-fast-status">단식 대기 중</div>
+      <div class="d-fast-clock" id="d-fast-clock">00:00:00</div>
+      <div class="d-fast-phase" id="d-fast-phase">단식을 시작하면 경과 시간에 따른 오토파지 단계가 표시됩니다.</div>
+      <div class="d-bar-track" style="height:10px;margin:14px 0 6px"><div class="d-bar-fill" id="d-fast-bar" style="width:0%;background:#c8a96e"></div></div>
+      <div class="d-fast-meta">
+        <span id="d-fast-start-label">시작 —</span>
+        <span id="d-fast-target-label">목표 16h</span>
+        <span id="d-fast-eta-label">종료 예정 —</span>
+      </div>
+      <div class="d-fast-controls">
+        <button class="d-input-btn d-input-btn-gold" id="d-fast-toggle" onclick="toggleFast()">▶ 단식 시작</button>
+        <button class="d-input-btn" id="d-fast-reset" onclick="cancelFast()" style="display:none">⏹ 취소</button>
+      </div>
+    </div>
+
+    <!-- 프리셋 선택 -->
+    <div class="d-section">단식 프리셋 <span class="d-fast-cap">— 진행 중이 아닐 때만 변경 가능</span></div>
+    <div class="d-pill-row" id="d-fast-presets">
+      <button class="d-pill" data-preset="16:8" onclick="setFastPreset('16:8',16)">16:8 · 16h</button>
+      <button class="d-pill" data-preset="18:6" onclick="setFastPreset('18:6',18)">18:6 · 18h</button>
+      <button class="d-pill" data-preset="20:4" onclick="setFastPreset('20:4',20)">20:4 · 20h</button>
+      <button class="d-pill" data-preset="omad" onclick="setFastPreset('omad',23)">OMAD · 23h</button>
+      <button class="d-pill" data-preset="custom" onclick="setFastPresetCustom()">커스텀…</button>
+    </div>
+
+    <!-- 공복 무결성 경고 -->
+    <div class="d-alert d-alert-warn"><span class="d-alert-icon">⚠️</span><div><strong>공복 무결성</strong> — 공복 중 <strong>칼로리(당·단백질·우유 등)</strong>를 섭취하면 인슐린·mTOR가 자극되어 <strong>오토파지가 즉시 중단</strong>됩니다. 허용: 물 · 블랙커피 · 무가당 차 · 무가당 전해질. <span style="color:#888">(카페 "3040 아저씨 루틴" 핵심)</span></div></div>
+
+    <!-- 오토파지 단계 마일스톤 -->
+    <div class="d-section">오토파지 단계 타임라인 <span class="d-fast-cap">— 경과 시간별 대사 전환 (개인차 큼 · 대략적 가이드)</span></div>
+    <div class="d-card"><div class="d-tl" id="d-fast-milestones"></div></div>
+
+    <!-- 루틴 템플릿 (카페 글 기반) -->
+    <div class="d-section">루틴 템플릿 <span class="d-fast-cap">— 카페 실사용 루틴 적용</span></div>
+    <div class="d-fast-tpl-grid">
+      <div class="d-card d-fast-tpl">
+        <div class="d-fast-tpl-title">🏢 직장인 16:8</div>
+        <div class="d-fast-tpl-sub">단식 20:00 → 익일 12:00 (16h)</div>
+        <ul class="d-fast-tpl-list">
+          <li>09:00 공복 유지 — 유산균 + 물 300ml (0kcal)</li>
+          <li>11:50 올리브오일 10g (식전 혈당 방어)</li>
+          <li>12:00 거꾸로 식사 — 지방·섬유 → 단백질 → 탄수</li>
+          <li>13:00 / 15:00 영양제 (계란으로 위벽 보호)</li>
+          <li>18:30 운동 → 19:00 저녁</li>
+          <li>20:00 단식 시작 · 22:00 마그네슘 · 22시 취침</li>
+        </ul>
+        <button class="d-input-btn d-input-btn-gold" onclick="applyFastTemplate('16:8',16)">이 루틴으로 16:8 시작</button>
+      </div>
+      <div class="d-card d-fast-tpl">
+        <div class="d-fast-tpl-title">🥩 키토제닉 16:8</div>
+        <div class="d-fast-tpl-sub">16h+ 공복 · 저탄수</div>
+        <ul class="d-fast-tpl-list">
+          <li>기상 직후 소금물 + 버터 (전해질)</li>
+          <li>12:00 점심 — 고기류 위주 + 밥 ½</li>
+          <li>운동 (탄수 적어도 힘 유지)</li>
+          <li>18~19:00 저녁 — 고기류 위주 + 밥 ½</li>
+          <li>이후 익일 점심까지 공복</li>
+        </ul>
+        <button class="d-input-btn d-input-btn-gold" onclick="applyFastTemplate('16:8',16)">이 루틴으로 16:8 시작</button>
+      </div>
+    </div>
+
+    <!-- 레퍼런스 -->
+    <div class="d-section">레퍼런스 · 근거</div>
+    <div class="d-card" style="font-size:11px;color:#aaa;line-height:1.75">
+      <div>• <strong style="color:#c8a96e">Yoshinori Ohsumi (2016 노벨 생리·의학상)</strong> — 오토파지 메커니즘 규명. 영양 결핍 시 세포가 손상 단백질·소기관을 분해·재활용.</div>
+      <div>• <strong style="color:#c8a96e">de Cabo &amp; Mattson, NEJM 2019</strong> — 간헐적 단식의 "대사 스위치"는 공복 약 12h 부근에서 글리코겐 고갈 → 지방·케톤 사용으로 전환.</div>
+      <div>• <strong style="color:#c8a96e">Shukla et al., Diabetes Care 2015</strong> — 채소·단백질을 탄수보다 먼저 먹으면 식후 혈당·인슐린 상승 완화 ("거꾸로 식사법" 근거).</div>
+      <div>• <strong style="color:#c8a96e">수면 · 오토파지</strong> — 수면 부족은 세포 청소·회복을 저해. 90분 수면 사이클 기준 7~8h 확보 권장.</div>
+      <div style="margin-top:6px;color:#666;font-size:10px">※ 인간 오토파지의 정량 측정은 어렵고 시점은 개인차(근육량·활동량·마지막 식사 구성)에 크게 좌우됩니다. 위 시간대는 일반적 가이드입니다.</div>
+    </div>
+
+    <!-- 히스토리 + 통계 -->
+    <div class="d-section">단식 기록 <span class="d-fast-cap" id="d-fast-stats">—</span></div>
+    <div id="d-fast-history"></div>
+
+    <div class="d-alert d-alert-info" style="margin-top:12px"><span class="d-alert-icon">ℹ️</span><div>당뇨·임신·수유·저체중·섭식장애 이력 또는 인슐린/GLP-1 등 약물 사용 시 간헐적 단식 전 <strong>의료진 상담</strong>이 필요합니다. 본 타이머는 의학적 처방이 아닙니다.</div></div>
+
   </div>
 
   <!-- ═══════════ 운동 스케줄 탭 ═══════════ -->
@@ -1511,7 +1616,7 @@ ollama list  # 설치 확인</pre>
 // ════════════════════════════════════════════════════════════════════
 
 const STORAGE_KEY = 'health_log_portable_v1';
-const APP_VERSION = 'health.log.portable.v1';
+const APP_VERSION = 'health.log.portable.v2';
 
 // ── 건강검진 베이스라인 — 사용자 자료 업로드 후 채워짐 ─────────────
 // extra.txt 에서 추출. 항목별: { value, unit, ref, status, category }
@@ -1571,6 +1676,8 @@ function defaultData() {
       customQuickProteins: [], // ⭐ 사용자 정의 빠른 입력 (영구 저장, JSON export 포함)
     },
     days: {}, weights: [],
+    // ⏱ 오토파지(간헐적단식) 타이머 — 현재 단식 상태 + 완료 기록 (다기기 sync: history union-by-id)
+    fasting: { preset: '16:8', targetHours: 16, startedAt: null, history: [], _fastingUpdatedAt: 0 },
     // 건강검진 결과 — 🩺 탭에서 AI 분석으로 자료 업로드 후 채워짐
     checkup: DEFAULT_CHECKUP,
     // 의료 / 운동 리마인더 — 검진 추적검사 + InBody 재측정 자동 시드
@@ -1846,6 +1953,7 @@ function mergeDefaults(p) {
     days: p.days || {},
     weights: p.weights || [],
     checkup: migrateCheckup(p.checkup || d.checkup),
+    fasting: { ...d.fasting, ...(p.fasting || {}) },
     reminders: Array.from(reminderMap.values()),
   };
 }
@@ -1943,6 +2051,16 @@ function mergeDietData(local, server) {
       const m = new Map();
       [...(server.reminders||[]), ...(local.reminders||[])].forEach(r => { if (r && r.id) m.set(r.id, r); });
       return Array.from(m.values());
+    })(),
+    // ⏱ fasting: history union-by-id 보존 + 활성상태는 _fastingUpdatedAt newer-wins
+    fasting: (() => {
+      const lf = local.fasting || {}, sf = server.fasting || {};
+      const hMap = new Map();
+      [...(sf.history||[]), ...(lf.history||[])].forEach(h => { if (h && h.id) hMap.set(h.id, h); });
+      const history = Array.from(hMap.values()).sort((a,b) => (b.endedAt||0) - (a.endedAt||0));
+      const base = (sf._fastingUpdatedAt||0) > (lf._fastingUpdatedAt||0) ? sf : lf;
+      return { preset: base.preset || '16:8', targetHours: base.targetHours || 16, startedAt: base.startedAt || null,
+               _fastingUpdatedAt: Math.max(lf._fastingUpdatedAt||0, sf._fastingUpdatedAt||0), history };
     })(),
     lastUpdatedAt: Math.max(local.lastUpdatedAt || 0, server.lastUpdatedAt || 0),
   };
@@ -2121,6 +2239,202 @@ function dSwitchTab(name) {
   if (name === 'log') renderWeightLog();
   if (name === 'checkup') renderCheckupPage();
   if (name === 'analytics') renderAnalyticsPage();
+  if (name === 'fasting') startFastTimer(); else stopFastTimer();
+}
+
+// ═══════════ ⏱ 오토파지(간헐적단식) 타이머 ═══════════
+// 단식 경과 시간(h)별 대사 단계. 시점은 개인차 큼 — 일반적 가이드 (de Cabo & Mattson, NEJM 2019).
+const FAST_MILESTONES = [
+  { h: 0,  icon:'🍽️', tag:'식후',        tagcls:'d-tag-meal', name:'식후 / 소화 흡수',            desc:'혈당·인슐린 상승, 영양소 저장(mTOR 활성). 오토파지 억제.' },
+  { h: 4,  icon:'📉', tag:'흡수후',      tagcls:'d-tag-w',    name:'흡수 후기 — 인슐린 하강',      desc:'혈당 정상화, 간 글리코겐을 에너지로 사용 시작.' },
+  { h: 8,  icon:'🔥', tag:'전환',        tagcls:'d-tag-f',    name:'글리코겐 고갈 시작',            desc:'간 글리코겐 점차 소진, 지방 연소 비중 증가.' },
+  { h: 12, icon:'🔄', tag:'대사 스위치', tagcls:'d-tag-c',    name:'대사 스위치 — 케톤 생성',       desc:'글리코겐 거의 고갈 → 지방·케톤 사용. AMPK 활성·mTOR 억제로 오토파지 점화.' },
+  { h: 16, icon:'♻️', tag:'오토파지',    tagcls:'d-tag-p',    name:'오토파지 본격화 ⭐',           desc:'케토시스 진입. 손상 단백질·소기관 재활용 활발 (16:8 목표 구간).' },
+  { h: 24, icon:'🚀', tag:'peak',        tagcls:'d-tag-ex',   name:'오토파지 강화 · 성장호르몬↑',   desc:'자가포식 극대화 경향, GH 분비 증가. 장기 단식 영역 — 무리 금지.' },
+];
+let _fastTimer = null;
+
+function fmtDur(ms){
+  if (ms < 0) ms = 0;
+  const s = Math.floor(ms/1000);
+  const p = n => String(n).padStart(2,'0');
+  return `${p(Math.floor(s/3600))}:${p(Math.floor((s%3600)/60))}:${p(s%60)}`;
+}
+function fmtClock(ts){
+  const d = new Date(ts), p = n => String(n).padStart(2,'0');
+  return `${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function currentFastPhase(hrs){
+  let cur = FAST_MILESTONES[0];
+  for (const m of FAST_MILESTONES){ if (hrs >= m.h) cur = m; }
+  return cur;
+}
+
+function setFastPreset(preset, hours){
+  if (DATA.fasting.startedAt){ toast('진행 중에는 프리셋 변경 불가 — 먼저 종료/취소'); return; }
+  DATA.fasting.preset = preset; DATA.fasting.targetHours = hours;
+  DATA.fasting._fastingUpdatedAt = Date.now();
+  saveData(); renderFasting();
+}
+function setFastPresetCustom(){
+  if (DATA.fasting.startedAt){ toast('진행 중에는 프리셋 변경 불가 — 먼저 종료/취소'); return; }
+  const v = prompt('목표 단식 시간 (시간 단위, 예: 14)', String(DATA.fasting.targetHours||16));
+  if (v == null) return;
+  const h = parseFloat(v);
+  if (!(h > 0 && h <= 72)){ toast('1~72 사이 숫자를 입력하세요'); return; }
+  DATA.fasting.preset = 'custom'; DATA.fasting.targetHours = h;
+  DATA.fasting._fastingUpdatedAt = Date.now();
+  saveData(); renderFasting();
+}
+function applyFastTemplate(preset, hours){
+  DATA.fasting.preset = preset; DATA.fasting.targetHours = hours;
+  if (!DATA.fasting.startedAt) DATA.fasting.startedAt = Date.now();
+  DATA.fasting._fastingUpdatedAt = Date.now();
+  saveData(); dSwitchTab('fasting');
+  toast(`⏱ ${preset} 단식 시작 — 목표 ${hours}h`);
+}
+function toggleFast(){ if (DATA.fasting.startedAt) endFast(); else startFast(); }
+function startFast(){
+  DATA.fasting.startedAt = Date.now();
+  DATA.fasting._fastingUpdatedAt = Date.now();
+  saveData(); renderFasting(); toast('▶ 단식 시작');
+}
+function endFast(){
+  const st = DATA.fasting.startedAt;
+  if (!st) return;
+  const now = Date.now(), dur = now - st, hrs = dur/3600000;
+  DATA.fasting.history.unshift({
+    id: 'f_' + st, startedAt: st, endedAt: now, durationMs: dur,
+    targetHours: DATA.fasting.targetHours, reachedAutophagy: hrs >= 16,
+  });
+  DATA.fasting.startedAt = null;
+  DATA.fasting._fastingUpdatedAt = now;
+  saveData(); renderFasting();
+  toast(`⏹ 단식 종료 — ${fmtDur(dur)} (${hrs >= 16 ? '오토파지 도달 ♻️' : hrs.toFixed(1)+'h'})`);
+}
+function cancelFast(){
+  if (!DATA.fasting.startedAt) return;
+  if (!confirm('현재 단식을 기록 없이 취소할까요?')) return;
+  DATA.fasting.startedAt = null;
+  DATA.fasting._fastingUpdatedAt = Date.now();
+  saveData(); renderFasting(); toast('단식 취소됨');
+}
+function delFastHistory(id){
+  DATA.fasting.history = DATA.fasting.history.filter(h => h.id !== id);
+  DATA.fasting._fastingUpdatedAt = Date.now();
+  saveData(); renderFasting();
+}
+
+function startFastTimer(){
+  renderFasting();
+  if (_fastTimer) clearInterval(_fastTimer);
+  _fastTimer = setInterval(fastTick, 1000);
+}
+function stopFastTimer(){ if (_fastTimer){ clearInterval(_fastTimer); _fastTimer = null; } }
+
+// 1초 갱신 — 라이브 시계 + 진행률 + 현재 단계 (정적 부분은 renderFasting)
+function fastTick(){
+  const f = DATA.fasting;
+  const clock = document.getElementById('d-fast-clock');
+  if (!clock){ stopFastTimer(); return; }
+  const target = f.targetHours || 16;
+  const phaseEl = document.getElementById('d-fast-phase');
+  const bar = document.getElementById('d-fast-bar');
+  if (!f.startedAt){
+    clock.textContent = '00:00:00';
+    if (bar){ bar.style.width = '0%'; bar.style.background = '#c8a96e'; }
+    if (phaseEl) phaseEl.textContent = '단식을 시작하면 경과 시간에 따른 오토파지 단계가 표시됩니다.';
+    updateMilestoneHighlight(-1);
+    return;
+  }
+  const elapsed = Date.now() - f.startedAt, hrs = elapsed/3600000;
+  clock.textContent = fmtDur(elapsed);
+  if (bar){ bar.style.width = Math.min(100,(hrs/target)*100).toFixed(1)+'%'; bar.style.background = hrs>=16?'#4caf50':(hrs>=12?'#ff9035':'#c8a96e'); }
+  const ms = currentFastPhase(hrs);
+  if (phaseEl) phaseEl.innerHTML = `${ms.icon} <strong>${ms.name}</strong> — ${ms.desc}`;
+  updateMilestoneHighlight(hrs);
+}
+
+function renderFastMilestones(){
+  const wrap = document.getElementById('d-fast-milestones');
+  if (!wrap) return;
+  wrap.innerHTML = FAST_MILESTONES.map((m, i) => {
+    const last = i === FAST_MILESTONES.length-1;
+    return `<div class="d-tl-row" data-ms="${m.h}">
+      <div class="d-tl-time">${m.h}h</div>
+      <div class="d-tl-spine"><div class="d-tl-dot" style="background:#444"></div>${last?'':'<div class="d-tl-line"></div>'}</div>
+      <div class="d-tl-body"><div class="d-tl-tags"><span class="d-tag ${m.tagcls}">${m.icon} ${m.tag}</span></div>
+      <div class="d-tl-name">${m.name}</div><div class="d-tl-desc">${m.desc}</div></div>
+    </div>`;
+  }).join('');
+}
+function updateMilestoneHighlight(hrs){
+  const active = !!DATA.fasting.startedAt;
+  const cur = currentFastPhase(hrs);
+  document.querySelectorAll('#d-fast-milestones .d-tl-row').forEach(row => {
+    const h = parseFloat(row.getAttribute('data-ms'));
+    row.classList.remove('d-fast-ms-active','d-fast-ms-done');
+    const dot = row.querySelector('.d-tl-dot');
+    if (active && h === cur.h){ row.classList.add('d-fast-ms-active'); if(dot) dot.style.background = '#c8a96e'; }
+    else if (active && h < cur.h){ row.classList.add('d-fast-ms-done'); if(dot) dot.style.background = '#4caf50'; }
+    else if (dot){ dot.style.background = '#444'; }
+  });
+}
+
+function renderFasting(){
+  const f = DATA.fasting;
+  if (!f) return;
+  const active = !!f.startedAt, target = f.targetHours || 16;
+  document.querySelectorAll('#d-fast-presets .d-pill').forEach(p => {
+    p.classList.toggle('active', p.getAttribute('data-preset') === f.preset);
+  });
+  const statusEl = document.getElementById('d-fast-status');
+  const toggleBtn = document.getElementById('d-fast-toggle');
+  const resetBtn = document.getElementById('d-fast-reset');
+  const startLabel = document.getElementById('d-fast-start-label');
+  const targetLabel = document.getElementById('d-fast-target-label');
+  const etaLabel = document.getElementById('d-fast-eta-label');
+  if (targetLabel) targetLabel.textContent = `목표 ${target}h (${f.preset})`;
+  if (active){
+    if (statusEl){ statusEl.textContent = '단식 진행 중'; statusEl.style.color = '#4caf50'; }
+    if (toggleBtn) toggleBtn.textContent = '⏹ 식사 시작 (단식 종료)';
+    if (resetBtn) resetBtn.style.display = '';
+    if (startLabel) startLabel.textContent = '시작 ' + fmtClock(f.startedAt);
+    if (etaLabel) etaLabel.textContent = '목표 도달 ' + fmtClock(f.startedAt + target*3600000);
+  } else {
+    if (statusEl){ statusEl.textContent = '단식 대기 중'; statusEl.style.color = '#888'; }
+    if (toggleBtn) toggleBtn.textContent = '▶ 단식 시작';
+    if (resetBtn) resetBtn.style.display = 'none';
+    if (startLabel) startLabel.textContent = '시작 —';
+    if (etaLabel) etaLabel.textContent = '종료 예정 —';
+  }
+  renderFastMilestones();
+  renderFastHistory();
+  fastTick();
+}
+
+function renderFastHistory(){
+  const wrap = document.getElementById('d-fast-history');
+  const statsEl = document.getElementById('d-fast-stats');
+  if (!wrap) return;
+  const hist = Array.isArray(DATA.fasting.history) ? DATA.fasting.history : [];
+  if (!hist.length){
+    wrap.innerHTML = '<div class="d-card" style="color:#666;font-size:11px">아직 완료한 단식 기록이 없습니다. 단식을 종료하면 여기에 누적됩니다.</div>';
+    if (statsEl) statsEl.textContent = '—';
+    return;
+  }
+  const n = hist.length;
+  const avgH = hist.reduce((a,h)=>a+(h.durationMs||0),0)/n/3600000;
+  const autoCnt = hist.filter(h => (h.durationMs||0)/3600000 >= 16).length;
+  if (statsEl) statsEl.textContent = `${n}회 · 평균 ${avgH.toFixed(1)}h · 오토파지 도달 ${autoCnt}회`;
+  wrap.innerHTML = hist.slice(0,30).map(h => {
+    const dur = h.durationMs||0, hrs = dur/3600000, reached = hrs >= 16;
+    return `<div class="d-fast-hist-row">
+      <span style="color:#888">${fmtClock(h.startedAt)} → ${fmtClock(h.endedAt)}</span>
+      <span><strong style="color:${reached?'#4caf50':'#c8a96e'}">${fmtDur(dur)}</strong> ${reached?'♻️':''} <span style="color:#555">/ 목표 ${h.targetHours||16}h</span></span>
+      <button class="d-fast-hist-del" onclick="delFastHistory('${h.id}')" title="삭제">✕</button>
+    </div>`;
+  }).join('');
 }
 
 // ───── 건강검진 뷰어 ─────
