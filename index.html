@@ -5280,8 +5280,10 @@ function dataImportJSON(input) {
   reader.onload = e => {
     try {
       const parsed = JSON.parse(e.target.result);
-      if (!parsed.version || !parsed.version.startsWith('diet.log')) {
-        if (!confirm('diet.log 형식이 아닐 수 있습니다. 계속할까요?')) return;
+      // health.log(포터블) / diet.log(호스팅) 백업 모두 허용 — v1→v2 이전 시 자기 백업 오경고 방지
+      const _ver = parsed.version || '';
+      if (!_ver.startsWith('diet.log') && !_ver.startsWith('health.log')) {
+        if (!confirm('health.log 백업 형식이 아닐 수 있습니다. 계속할까요?')) return;
       }
       const mode = confirm('OK: 기존 데이터 덮어쓰기\n취소: 기존 데이터에 병합 (날짜별)') ? 'overwrite' : 'merge';
       if (mode === 'overwrite') {
