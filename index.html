@@ -1958,21 +1958,21 @@ function mergeDefaults(p) {
   };
 }
 
-const IS_KRRR = location.protocol !== 'file:' && !!location.hostname;
+const IS_HOSTED = location.protocol !== 'file:' && !!location.hostname;
 
 function saveData() {
   // 로컬 수정 timestamp — 페이지 재로드 시 서버보다 로컬이 최신이면 서버를 덮어쓰지 않고 push
   DATA.lastUpdatedAt = Date.now();
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA)); }
   catch (e) { toast('⚠️ localStorage 가득 참 — JSON 저장 필요'); }
-  if (IS_KRRR) syncToServer();
+  if (IS_HOSTED) syncToServer();
 }
 
 // 서버 -> 클라이언트 (페이지 로드 시 1회)
 // 다기기 동기화: server <-> local 양방향 merge (union) 후 결과를 서버에 push back
 // 이전 lastUpdatedAt 단순 비교는 한쪽 기기 데이터가 다른 쪽을 덮어쓰는 버그 있었음
 async function loadFromServer() {
-  if (!IS_KRRR) return;
+  if (!IS_HOSTED) return;
   try {
     // cache:'no-store' + ?t=ts 쿼리스트링 = Safari 브라우저 캐시 완전 차단 (즐겨찾기 sync 누락 버그)
     const r = await fetch('/api/diet/data?t=' + Date.now(), {
@@ -2705,7 +2705,7 @@ function dAddCustomProtein() {
 const _newProduct = { productImage: null, nutritionImage: null };
 
 // 식단/피트니스/수면 vision 분석 — provider adapter 통일
-// 환경 분기: krrr.cloud (호스팅) → 백엔드 프록시 / file:// (포터블) → 선택된 provider 직접 호출
+// 환경 분기: 호스팅 모드 → 백엔드 프록시 / file:// (포터블) → 선택된 provider 직접 호출
 async function callVisionAPI(imageDataURL, type) {
   const isFile = location.protocol === 'file:' || !location.hostname;
   const prompts = {
@@ -3154,7 +3154,7 @@ async function submitNewProduct() {
   renderRegPreview(); updateRegSubmitState();
   toast(`📦 "${name}" 등록 — 서버 동기화 중...`);
   // 동기화 완료 명시적 대기 — fire-and-forget 으로 in-flight 요청 취소 (탭 닫기/새로고침) 시 데이터 손실 방지
-  if (IS_KRRR) {
+  if (IS_HOSTED) {
     const ok = await syncToServerAndWait();
     toast(ok ? `✅ "${name}" 즐겨찾기 등록 + 서버 저장 완료` : `⚠️ "${name}" 로컬은 저장됐으나 서버 동기화 실패 — 페이지 닫지 말고 재시도`);
   } else {
@@ -3195,7 +3195,7 @@ async function deleteCustomQuickProtein(id) {
   renderCustomQuickProteins();
   toast(`🗑️ "${target.name}" 삭제 — 동기화 중...`);
   // 모바일 즐겨찾기 삭제는 sync 까지 await 필수 (탭 닫기 / 새로고침 시 in-flight 요청 cancel 방지)
-  if (IS_KRRR) {
+  if (IS_HOSTED) {
     const ok = await syncToServerAndWait();
     toast(ok ? `✅ "${target.name}" 삭제 완료 (서버 반영)` : `⚠️ "${target.name}" 로컬 삭제됨, 서버 동기화 실패 — 새로고침 후 재확인`);
   }
@@ -3658,7 +3658,7 @@ async function compressImage(file, maxDim = 1920, quality = 0.85) {
 }
 
 // 이미지 저장 — 환경 분기:
-// (1) krrr.cloud 호스팅 -> POST /api/diet/image (서버 디스크 + path 응답, JSON 경량화)
+// (1) 호스팅 모드 -> POST /api/diet/image (서버 디스크 + path 응답, JSON 경량화)
 // (2) file:// standalone -> 기존 embed(base64) 또는 path(수동 다운로드)
 async function storeImage(file, tag) {
   // 압축 우선 — 5MB+ 원본은 서버 한도 초과 + localStorage 쿼터 초과 위험
@@ -3668,8 +3668,8 @@ async function storeImage(file, tag) {
   const ext = (file.type === 'image/jpeg' ? 'jpg' : (file.name.split('.').pop() || 'jpg')).toLowerCase();
   const filename = `${KEY_TODAY()}_${tag}_${ts}.${ext}`;
 
-  const isKrrrCloud = location.protocol !== 'file:' && !!location.hostname;
-  if (isKrrrCloud) {
+  const isHosted = location.protocol !== 'file:' && !!location.hostname;
+  if (isHosted) {
     // 서버 업로드 시도. 실패 시 embed fallback
     try {
       const allowedTags = ['product', 'nutrition', 'fitness', 'sleep', 'misc'];
@@ -3703,7 +3703,7 @@ async function storeImage(file, tag) {
 function getImageSrc(stored) {
   if (!stored) return '';
   if (typeof stored === 'string') return stored;
-  // server-path (krrr.cloud 호스팅) — 서버 디스크 저장본 URL
+  // server-path (호스팅 모드) — 서버 디스크 저장본 URL
   if (stored.mode === 'server-path') return stored.path;
   if (stored.mode === 'embed') return stored.dataURL;
   if (stored.mode === 'path') return stored.path;
@@ -4742,15 +4742,15 @@ function printMedicalPdf() {
 function openHelpModal() {
   const envBanner = document.getElementById('help-env-banner');
   if (envBanner) {
-    if (IS_KRRR) {
-      envBanner.innerHTML = `<div style="color:#4caf50;font-weight:600;margin-bottom:4px">☁️ krrr.cloud 호스팅 모드</div>
+    if (IS_HOSTED) {
+      envBanner.innerHTML = `<div style="color:#4caf50;font-weight:600;margin-bottom:4px">☁️ 호스팅 모드</div>
         <div style="color:#aaa">백엔드 프록시가 Ollama 자동 연동. 클라이언트 추가 설정 X. 다기기 동기화 ✓ (맥/윈도/iOS).
         Ollama 설정 (1-3️⃣ 단계) 은 <strong>관리자 서버 설정용</strong> — 본인 사용자는 5️⃣ 기능 사용법 부터 참고`;
     } else {
       envBanner.innerHTML = `<div style="color:#64b5f6;font-weight:600;margin-bottom:4px">📂 포터블 모드 (file://) — 로컬 Ollama 필요</div>
         <div style="color:#aaa">AI 기능 (식단 스캔, 검진 분석) 사용하려면 <strong style="color:#ffd54f">1-4️⃣ 단계 모두 진행</strong> 필요.
         Ollama 서버 + OLLAMA_ORIGINS + 모델 다운로드 완료 후 새로고침.
-        ※ localStorage 만 사용 — 다기기 동기화 X (필요 시 krrr.cloud 호스팅 사용)</div>`;
+        ※ localStorage 만 사용 — 다기기 동기화 X (필요 시 자체 호스팅 사용)</div>`;
     }
   }
   document.getElementById('help-modal').classList.add('open');
@@ -5280,7 +5280,7 @@ function dataImportJSON(input) {
   reader.onload = e => {
     try {
       const parsed = JSON.parse(e.target.result);
-      // health.log(포터블) / diet.log(호스팅) 백업 모두 허용 — v1→v2 이전 시 자기 백업 오경고 방지
+      // 백업 파일 버전 prefix 양쪽 허용 — v1→v2 이전 시 자기 백업 오경고 방지
       const _ver = parsed.version || '';
       if (!_ver.startsWith('diet.log') && !_ver.startsWith('health.log')) {
         if (!confirm('health.log 백업 형식이 아닐 수 있습니다. 계속할까요?')) return;
@@ -5387,7 +5387,7 @@ async function scanRunAI() {
     }
     statusEl.textContent = `🤖 gemma4:31b-cloud 분석 중... (압축본 ${dataURLs.length}장 전송)`;
 
-    // 환경 분기: file:// = Ollama 직접 / krrr.cloud = 백엔드 프록시
+    // 환경 분기: file:// = Ollama 직접 / 호스팅 = 백엔드 프록시
     const isFile = location.protocol === 'file:' || !location.hostname;
     let result;
     if (isFile) {
@@ -5416,7 +5416,7 @@ async function scanRunAI() {
       if (!parsed) throw new Error('JSON 파싱 실패: ' + content.slice(0, 200));
       result = { ok: true, data: parsed };
     } else {
-      // krrr.cloud: 백엔드 프록시 (images array 지원)
+      // 호스팅: 백엔드 프록시 (images array 지원)
       const r = await fetch('/api/diet/vision', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
@@ -5656,7 +5656,7 @@ async function scanSubmitToFavorites() {
   saveData();
   renderCustomQuickProteins();
   toast(`⭐ 즐겨찾기 ${added}개 추가${skipped ? ' (' + skipped + '개 중복 skip)' : ''}`);
-  if (IS_KRRR) {
+  if (IS_HOSTED) {
     const ok = await syncToServerAndWait();
     toast(ok ? `✅ 즐겨찾기 ${added}개 서버 저장 완료` : '⚠️ 로컬은 저장됨, 서버 동기화는 재시도 필요');
   }
@@ -5913,7 +5913,7 @@ async function manualSaveAsFavorite(idx) {
   saveData();
   renderCustomQuickProteins();
   toast(`⭐ "${name}" 즐겨찾기 저장 — 서버 동기화 중...`);
-  if (IS_KRRR) {
+  if (IS_HOSTED) {
     const ok = await syncToServerAndWait();
     toast(ok ? `✅ "${name}" 즐겨찾기 저장 완료` : `⚠️ "${name}" 로컬 저장됨, 서버 동기화 실패 — 재시도`);
   }
@@ -6156,9 +6156,9 @@ function scanDeleteHistory(idx) {
 // 초기화
 // ════════════════════════════════════════════════════════════════════
 (async function init() {
-  // krrr.cloud: 서버 데이터 우선 로드 (기기 간 sync)
+  // 호스팅: 서버 데이터 우선 로드 (기기 간 sync)
   await loadFromServer();
-  if (IS_KRRR) {
+  if (IS_HOSTED) {
     const btn = document.getElementById('btn-json-export');
     if (btn) btn.style.display = 'none';
   }
@@ -6197,7 +6197,7 @@ function scanDeleteHistory(idx) {
   }, 60000);
 
   // 탭 닫기/새로고침 직전 미동기화 변경사항 sendBeacon 으로 최종 보호 (fetch는 cancel 되지만 sendBeacon 은 queue됨)
-  if (IS_KRRR) {
+  if (IS_HOSTED) {
     const flushBeacon = () => {
       try {
         const payload = JSON.stringify({ data: DATA });
